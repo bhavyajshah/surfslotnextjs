@@ -25,4 +25,15 @@ if (process.env.NODE_ENV === "development") {
   clientPromise = client.connect();
 }
 
+// Add this function to test the connection
+export async function testConnection() {
+  try {
+    const client = await clientPromise;
+    await client.db().command({ ping: 1 });
+    console.log("Successfully connected to MongoDB");
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+  }
+}
+
 export default clientPromise;

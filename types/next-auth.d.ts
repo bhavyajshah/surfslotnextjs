@@ -1,4 +1,4 @@
-
+import { DefaultSession } from "next-auth"
 import NextAuth from "next-auth"
 
 declare module "next-auth" {
@@ -17,3 +17,12 @@ declare module "next-auth" {
     refreshToken?: string
   }
 }
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    accessToken?: string
+    user: {
+      id: string
+    } & DefaultSession["user"]
+  }
+}
+

@@ -12,43 +12,40 @@ const handler = NextAuth({
         params: {
           prompt: "consent",
           access_type: "offline",
-          response_type: "code",
-          scope: "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly"
+          response_type: "code"
         }
       }
     }),
   ],
   adapter: MongoDBAdapter(clientPromise),
   callbacks: {
-    async jwt({ token, account }) {
-      if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-      }
-      return token;
-    },
-    async session({ session, token, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        session.accessToken = token.accessToken;
-      }
-      return session;
-    },
     async signIn({ account, profile }) {
       if (account?.provider === "google") {
         return true;
       }
       return false;
     },
+    async jwt({ token, account, user }) {
+      if (account) {
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.userId = user?.id;
+      }
+      return token;
+    },
+    async session({ session, token, user }) {
+      if (session.user) {
+        session.user.id = user?.id || token.userId;
+        session.accessToken = token.accessToken;
+      }
+      return session;
+    },
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error", // Add this line to create a custom error page
   },
-  session: {
-    strategy: "database",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  secret: process.env.NEXTAUTH_SECRET,
+  debug: true, // Enable debug mode
 });
 
 export { handler as GET, handler as POST };

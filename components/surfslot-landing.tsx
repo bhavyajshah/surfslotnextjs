@@ -24,19 +24,8 @@ export default function SurfslotLanding() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signIn('google', {
-        callbackUrl: '/dashboard',
-        scope: [
-          'https://www.googleapis.com/auth/calendar',
-          'https://www.googleapis.com/auth/calendar.events',
-          'https://www.googleapis.com/auth/calendar.readonly'
-        ].join(' ')
-      })
-    } catch (error) {
-      console.error('Sign in error:', error)
-    }
+  const handleGoogleSignIn = () => {
+    signIn('google')
   }
 
   return (
