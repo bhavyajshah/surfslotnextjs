@@ -37,31 +37,28 @@ export default function DashboardContent({ user }: DashboardContentProps) {
           <nav className="flex gap-6 mt-6">
             <button
               onClick={() => setActiveTab('locations')}
-              className={\`pb-2 \${
-                activeTab === 'locations'
+              className={`pb-2 ${activeTab === 'locations'
                   ? 'border-b-2 border-primary font-semibold'
                   : 'text-muted-foreground'
-              }\`}
+                }`}
             >
               locations
             </button>
             <button
               onClick={() => setActiveTab('surf settings')}
-              className={\`pb-2 \${
-                activeTab === 'surf settings'
+              className={`pb-2 ${activeTab === 'surf settings'
                   ? 'border-b-2 border-primary font-semibold'
                   : 'text-muted-foreground'
-              }\`}
+                }`}
             >
               surf settings
             </button>
             <button
               onClick={() => setActiveTab('scheduled surfslots')}
-              className={\`pb-2 \${
-                activeTab === 'scheduled surfslots'
+              className={`pb-2 ${activeTab === 'scheduled surfslots'
                   ? 'border-b-2 border-primary font-semibold'
                   : 'text-muted-foreground'
-              }\`}
+                }`}
             >
               scheduled surfslots
             </button>

@@ -1,22 +1,13 @@
-'use client';
-
 import { useState, useEffect } from 'react';
+import { Location, UseLocationsReturn } from './types';
+import {
+  fetchLocationsApi,
+  removeLocationApi,
+  toggleLocationApi,
+  toggleSpotApi,
+} from './api';
 
-interface Spot {
-  id: string;
-  name: string;
-  active: boolean;
-}
-
-interface Location {
-  id: string;
-  name: string;
-  active: boolean;
-  comingSoon?: boolean;
-  spots: Spot[];
-}
-
-export function useLocations() {
+export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,8 +17,7 @@ export function useLocations() {
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch('/api/locations');
-      const data = await response.json();
+      const data = await fetchLocationsApi();
       setLocations(data);
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -38,13 +28,12 @@ export function useLocations() {
 
   const addLocation = async () => {
     // Implementation for adding a new location
+    // To be implemented based on requirements
   };
 
   const removeLocation = async (locationId: string) => {
     try {
-      await fetch(\`/api/locations/\${locationId}\`, {
-        method: 'DELETE',
-      });
+      await removeLocationApi(locationId);
       setLocations(prev => prev.filter(loc => loc.id !== locationId));
     } catch (error) {
       console.error('Error removing location:', error);
@@ -56,16 +45,10 @@ export function useLocations() {
       const location = locations.find(loc => loc.id === locationId);
       if (!location) return;
 
-      const updatedLocation = { ...location, active: !location.active };
-      await fetch(\`/api/locations/\${locationId}\`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: updatedLocation.active }),
-      });
-
+      await toggleLocationApi(locationId, !location.active);
       setLocations(prev =>
         prev.map(loc =>
-          loc.id === locationId ? updatedLocation : loc
+          loc.id === locationId ? { ...loc, active: !loc.active } : loc
         )
       );
     } catch (error) {
@@ -81,12 +64,7 @@ export function useLocations() {
       const spot = location.spots.find(s => s.id === spotId);
       if (!spot) return;
 
-      await fetch(\`/api/locations/\${locationId}/spots/\${spotId}\`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: !spot.active }),
-      });
-
+      await toggleSpotApi(locationId, spotId, !spot.active);
       setLocations(prev =>
         prev.map(loc =>
           loc.id === locationId
@@ -113,3 +91,5 @@ export function useLocations() {
     toggleSpot,
   };
 }
+
+export * from './types';

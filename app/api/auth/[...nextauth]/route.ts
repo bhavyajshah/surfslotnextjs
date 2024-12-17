@@ -13,14 +13,7 @@ const handler = NextAuth({
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
-          scope: [
-            "openid",
-            "email",
-            "profile",
-            "https://www.googleapis.com/auth/calendar",
-            "https://www.googleapis.com/auth/calendar.events",
-            "https://www.googleapis.com/auth/calendar.readonly"
-          ].join(" ")
+          scope: "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly"
         }
       }
     }),
@@ -35,8 +28,10 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token, user }) {
-      session.user.id = user.id;
-      session.accessToken = token.accessToken;
+      if (session.user) {
+        session.user.id = user.id;
+        session.accessToken = token.accessToken;
+      }
       return session;
     },
     async signIn({ account, profile }) {
