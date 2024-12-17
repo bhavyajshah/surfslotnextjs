@@ -1,3 +1,4 @@
+
 import NextAuth from "next-auth"
 
 declare module "next-auth" {
@@ -8,5 +9,11 @@ declare module "next-auth" {
       email?: string | null
       image?: string | null
     }
+    accessToken?: any
+  }
+
+  interface JWT {
+    accessToken?: string
+    refreshToken?: string
   }
 }
