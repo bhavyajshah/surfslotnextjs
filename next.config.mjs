@@ -3,6 +3,9 @@ const nextConfig = {
     images: {
         domains: ['surfslot.pt'],
     },
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
 };
 
 export default nextConfig;

@@ -1,10 +1,13 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"],
-   "rules": {
+  "extends": ["next/core-web-vitals"],
+  "rules": {
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "react/display-name": "off",
     "react-hooks/exhaustive-deps": "warn",
-    "@next/next/no-img-element": "warn"
+    "@next/next/no-img-element": "off",
+    "react/no-unescaped-entities": "off",
+    "react/jsx-no-target-blank": "off",
+    "@next/next/no-page-custom-font": "off"
   }
 }

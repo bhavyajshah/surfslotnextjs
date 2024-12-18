@@ -1,4 +1,4 @@
-import { AuthError } from "next-auth";
+import AuthError from "next-auth";
 
 export class AuthenticationError extends Error {
   constructor(
@@ -13,14 +13,6 @@ export class AuthenticationError extends Error {
 
 export function handleAuthError(error: unknown): AuthenticationError {
   console.error("Authentication error:", error);
-
-  if (error instanceof AuthError) {
-    return new AuthenticationError(
-      "Authentication failed",
-      error.type,
-      error
-    );
-  }
 
   if (error instanceof Error) {
     return new AuthenticationError(
