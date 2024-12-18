@@ -5,7 +5,14 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  maxPoolSize: 10,
+  serverApi: {
+    version: '1',
+    strict: true,
+    deprecationErrors: true,
+  },
+};
 
 let client;
 let clientPromise: Promise<MongoClient>;
@@ -23,17 +30,6 @@ if (process.env.NODE_ENV === "development") {
 } else {
   client = new MongoClient(uri, options);
   clientPromise = client.connect();
-}
-
-// Add this function to test the connection
-export async function testConnection() {
-  try {
-    const client = await clientPromise;
-    await client.db().command({ ping: 1 });
-    console.log("Successfully connected to MongoDB");
-  } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
-  }
 }
 
 export default clientPromise;
