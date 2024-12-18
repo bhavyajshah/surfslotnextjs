@@ -4,16 +4,17 @@
 import Image from "next/image"
 import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
+import { signIn } from "next-auth/react"
 
 interface HeroSectionProps {
-  onSignIn: () => void
+  // onSignIn: () => void
   animations: {
     fadeInUp: any
     stagger: any
   }
 }
 
-export function HeroSection({ onSignIn, animations }: HeroSectionProps) {
+export function HeroSection({  animations }: HeroSectionProps) {
   const { fadeInUp, stagger } = animations
 
   return (
@@ -41,7 +42,7 @@ export function HeroSection({ onSignIn, animations }: HeroSectionProps) {
           </motion.p>
           <motion.div variants={fadeInUp}>
             <Button
-              onClick={onSignIn}
+              onClick={() => signIn('google')}
               className="mt-8 bg-black text-white hover:bg-gray-800"
             >
               <Image

@@ -31,5 +31,10 @@ export const authConfig: NextAuthConfig = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  callbacks: {
+    authorized({ request, auth }) {
+      return !!auth?.user;
+    },
+  },
   debug: process.env.NODE_ENV === 'development',
 };

@@ -36,7 +36,7 @@ export default function SurfslotLanding() {
       />
 
       <HeroSection
-        onSignIn={handleGoogleSignIn}
+        // onSignIn={handleGoogleSignIn}
         animations={{
           fadeInUp: {
             initial: { y: 20, opacity: 0 },

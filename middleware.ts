@@ -1,25 +1,32 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+// import type { NextRequestWithAuth } from "next-auth/middleware";
+import { isPublicRoute, isAuthRoute, isDashboardRoute, redirectToLogin } from "@/lib/middleware/route-guards";
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+export default auth((req:any) => {
   const { pathname } = req.nextUrl;
+  const isAuthenticated = !!req.auth;
 
-  // Redirect authenticated users away from auth pages
-  if (isLoggedIn && pathname.startsWith('/auth')) {
+  // Public routes configuration
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Auth routes handling
+  if (isAuthenticated && isAuthRoute(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // Protect dashboard routes
-  if (!isLoggedIn && pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url));
+  // Dashboard protection
+  if (!isAuthenticated && isDashboardRoute(pathname)) {
+    return redirectToLogin(req.url, pathname);
   }
+
+  return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/auth/:path*',
-    '/api/auth/:path*'
-  ]
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };
