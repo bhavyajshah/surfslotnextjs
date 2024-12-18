@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { Location } from '@/types/location';
+import { Switch } from '@radix-ui/react-switch';
 
 interface LocationCardProps {
   location: Location;
@@ -34,7 +34,7 @@ export function LocationCard({ location, onToggle, onRemove, onToggleSpot }: Loc
           </button>
         </div>
       </div>
-      
+
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
