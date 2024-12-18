@@ -16,7 +16,6 @@ export default auth((req) => {
   }
 });
 
-// Ensure middleware runs on these paths
 export const config = {
   matcher: [
     '/dashboard/:path*',
