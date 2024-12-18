@@ -9,11 +9,7 @@ import { CalendarAccessNotification } from './notifications/calendar-access'
 import { SubscriptionNotification } from './notifications/subscription'
 import { UserDropdown } from './user-dropdown'
 
-interface DashboardContentProps {
-  user?: User | null
-}
-
-export default function DashboardContent({ user }: DashboardContentProps) {
+export default function DashboardContent({ user }: any) {
   const [activeTab, setActiveTab] = useState('locations')
   const [hasCalendarAccess, setHasCalendarAccess] = useState(false)
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
