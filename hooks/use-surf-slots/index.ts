@@ -1,12 +1,16 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { SurfSlot } from './types';
-import { useGoogleCalendar } from '../use-google-calendar';
+import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
+import { createSurfEvent } from '@/lib/google-calender';
 
 export function useSurfSlots() {
   const [slots, setSlots] = useState<SurfSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { createSurfEvent } = useGoogleCalendar();
+  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -16,14 +20,19 @@ export function useSurfSlots() {
   const fetchSlots = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await fetch('/api/slots');
-      if (!response.ok) throw new Error('Failed to fetch slots');
+      if (!response.ok) {
+        throw new Error('Failed to fetch surf slots');
+      }
       const data = await response.json();
       setSlots(data);
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch surf slots';
+      setError(message);
       toast({
         title: 'Error',
-        description: 'Failed to fetch surf slots',
+        description: message,
         variant: 'destructive'
       });
     } finally {
@@ -31,26 +40,39 @@ export function useSurfSlots() {
     }
   };
 
-  const addToCalendar = async (slot: SurfSlot) => {
+  const scheduleSession = async (slot: SurfSlot) => {
     try {
-      await createSurfEvent(slot);
+      const startTime = new Date(slot.date);
+      const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+
+      await createSurfEvent(session, {
+        spot: slot.spot,
+        location: slot.location,
+        conditions: slot.conditions,
+        startTime,
+        endTime
+      });
+
       toast({
         title: 'Success',
-        description: 'Added to Google Calendar'
+        description: 'Surf session scheduled successfully'
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to schedule surf session';
       toast({
         title: 'Error',
-        description: 'Failed to add to calendar',
+        description: message,
         variant: 'destructive'
       });
+      throw error;
     }
   };
 
   return {
     slots,
     isLoading,
-    addToCalendar,
+    error,
+    scheduleSession,
     refresh: fetchSlots
   };
 }

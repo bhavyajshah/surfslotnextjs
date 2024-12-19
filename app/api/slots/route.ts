@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const activeLocations = await prisma.location.findMany({
-      where: { 
+      where: {
         active: true,
         spots: {
           some: {
@@ -23,10 +23,19 @@ export async function GET() {
         spots: {
           where: {
             active: true
+          },
+          select: {
+            id: true,
+            name: true,
+            conditions: true
           }
         }
       }
     });
+
+    if (!activeLocations.length) {
+      return NextResponse.json([]);
+    }
 
     const currentDate = new Date();
     const slots = activeLocations.flatMap(location =>
@@ -46,6 +55,10 @@ export async function GET() {
 
     return NextResponse.json(slots);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch surf slots' }, { status: 500 });
+    console.error('Error fetching surf slots:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

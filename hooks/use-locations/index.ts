@@ -10,6 +10,7 @@ import { isAdmin } from '@/lib/auth/utils/auth-checks';
 export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
   const { toast } = useToast();
 
@@ -20,12 +21,15 @@ export function useLocations(): UseLocationsReturn {
   const loadLocations = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const data = await fetchLocations();
       setLocations(data);
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch locations';
+      setError(message);
       toast({
         title: 'Error',
-        description: 'Failed to fetch locations',
+        description: message,
         variant: 'destructive'
       });
     } finally {
@@ -41,10 +45,12 @@ export function useLocations(): UseLocationsReturn {
         title: 'Success',
         description: 'Location added successfully'
       });
+      return newLocation;
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add location';
       toast({
         title: 'Error',
-        description: 'Failed to add location',
+        description: message,
         variant: 'destructive'
       });
       throw error;
@@ -61,28 +67,12 @@ export function useLocations(): UseLocationsReturn {
         title: 'Success',
         description: 'Location updated successfully'
       });
+      return updatedLocation;
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update location';
       toast({
         title: 'Error',
-        description: 'Failed to update location',
-        variant: 'destructive'
-      });
-      throw error;
-    }
-  };
-
-  const handleDeleteLocation = async (id: string) => {
-    try {
-      await deleteLocation(id);
-      setLocations(prev => prev.filter(loc => loc.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Location deleted successfully'
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete location',
+        description: message,
         variant: 'destructive'
       });
       throw error;
@@ -92,9 +82,11 @@ export function useLocations(): UseLocationsReturn {
   return {
     locations,
     isLoading,
+    error,
     addLocation: handleAddLocation,
     updateLocation: handleUpdateLocation,
     deleteLocation: handleDeleteLocation,
+    refresh: loadLocations,
     isAdmin: isAdmin(session?.user?.email)
   };
 }

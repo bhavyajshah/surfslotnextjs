@@ -1,57 +1,56 @@
 import { prisma } from '@/lib/prisma';
 
 export async function getLocations() {
-  return prisma.location.findMany({
-    include: {
-      spots: true
-    }
-  });
-}
-
-export async function getLocationById(id: string) {
-  return prisma.location.findUnique({
-    where: { id },
-    include: {
-      spots: true
-    }
-  });
+  try {
+    const locations = await prisma.location.findMany({
+      include: {
+        spots: {
+          select: {
+            id: true,
+            name: true,
+            active: true,
+            conditions: true
+          }
+        }
+      }
+    });
+    return locations;
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    throw new Error('Failed to fetch locations');
+  }
 }
 
 export async function createLocation(data: {
   name: string;
   city: string;
-  spots?: { name: string; active?: boolean }[];
+  spots?: { name: string; active?: boolean; conditions?: any }[];
 }) {
-  return prisma.location.create({
-    data: {
-      name: data.name,
-      city: data.city,
-      spots: {
-        create: data.spots || []
+  try {
+    return await prisma.location.create({
+      data: {
+        name: data.name,
+        city: data.city,
+        active: false,
+        spots: {
+          create: data.spots?.map(spot => ({
+            name: spot.name,
+            active: spot.active ?? false,
+            conditions: spot.conditions ?? {
+              waveHeight: 'medium',
+              wind: 'offshore',
+              tide: 'mid',
+              bestTimeToSurf: ['morning', 'evening']
+            }
+          })) ?? []
+        }
+      },
+      include: {
+        spots: true
       }
-    },
-    include: {
-      spots: true
-    }
-  });
-}
-
-export async function updateLocation(id: string, data: {
-  name?: string;
-  city?: string;
-  active?: boolean;
-}) {
-  return prisma.location.update({
-    where: { id },
-    data,
-    include: {
-      spots: true
-    }
-  });
-}
-
-export async function deleteLocation(id: string) {
-  return prisma.location.delete({
-    where: { id }
-  });
+    });
+  } catch (error) {
+    console.error('Error creating location:', error);
+    throw new Error('Failed to create location');
+  }
 }
