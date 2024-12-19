@@ -1,35 +1,38 @@
-import { MongoClient } from "mongodb";
+import mongoose from 'mongoose';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+const MONGODB_URI = process.env.MONGODB_URI!;
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
-const uri = process.env.MONGODB_URI;
-const options = {
-  maxPoolSize: 10,
-  serverApi: {
-    version: '1',
-    strict: true,
-    deprecationErrors: true,
-  },
-};
+let cached = global.mongoose;
 
-let client;
-let clientPromise: Promise<MongoClient>;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
-if (process.env.NODE_ENV === "development") {
-  const globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>;
-  };
-
-  if (!globalWithMongo._mongoClientPromise) {
-    client  = new MongoClient(uri, options as any);
-    globalWithMongo._mongoClientPromise = client.connect();
+export async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
   }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options as any);
-  clientPromise = client.connect();
-}
 
-export default clientPromise;
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}

@@ -8,33 +8,35 @@ export async function fetchLocations(): Promise<Location[]> {
   return response.json();
 }
 
-export async function removeLocation(locationId: string): Promise<void> {
-  const response = await fetch(`/api/locations/${locationId}`, {
+export async function addLocation(data: Partial<Location>): Promise<Location> {
+  const response = await fetch('/api/admin/locations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to add location');
+  }
+  return response.json();
+}
+
+export async function updateLocation(id: string, data: Partial<Location>): Promise<Location> {
+  const response = await fetch(`/api/admin/locations/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update location');
+  }
+  return response.json();
+}
+
+export async function deleteLocation(id: string): Promise<void> {
+  const response = await fetch(`/api/admin/locations/${id}`, {
     method: 'DELETE',
   });
   if (!response.ok) {
-    throw new Error('Failed to remove location');
-  }
-}
-
-export async function toggleLocation(locationId: string, active: boolean): Promise<void> {
-  const response = await fetch(`/api/locations/${locationId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ active }),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to toggle location');
-  }
-}
-
-export async function toggleSpot(locationId: string, spotId: string, active: boolean): Promise<void> {
-  const response = await fetch(`/api/locations/${locationId}/spots/${spotId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ active }),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to toggle spot');
+    throw new Error('Failed to delete location');
   }
 }

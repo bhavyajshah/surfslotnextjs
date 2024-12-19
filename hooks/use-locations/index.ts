@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Location, UseLocationsReturn } from './types';
-import { fetchLocations, removeLocation, toggleLocation, toggleSpot } from './api';
+import { fetchLocations, addLocation, updateLocation, deleteLocation } from './api';
+import { useSession } from 'next-auth/react';
+import { useToast } from '@/components/ui/use-toast';
 
 export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadLocations();
@@ -14,99 +17,81 @@ export function useLocations(): UseLocationsReturn {
   const loadLocations = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       const data = await fetchLocations();
       setLocations(data);
-    } catch (err) {
-      setError('Failed to fetch locations');
-      console.error('Error fetching locations:', err);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch locations',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const addLocation = async () => {
+  const handleAddLocation = async (data: Partial<Location>) => {
     try {
-      const response = await fetch('/api/locations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add location');
-      }
-
-      const newLocation = await response.json();
+      const newLocation = await addLocation(data);
       setLocations(prev => [...prev, newLocation]);
-      return newLocation;
+      toast({
+        title: 'Success',
+        description: 'Location added successfully'
+      });
     } catch (error) {
-      console.error('Error adding location:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add location',
+        variant: 'destructive'
+      });
       throw error;
     }
   };
 
-  const handleRemoveLocation = async (locationId: string) => {
+  const handleUpdateLocation = async (id: string, data: Partial<Location>) => {
     try {
-      await removeLocation(locationId);
-      setLocations(prev => prev.filter(loc => loc._id !== locationId));
-    } catch (err) {
-      console.error('Error removing location:', err);
+      const updatedLocation = await updateLocation(id, data);
+      setLocations(prev =>
+        prev.map(loc => loc.id === id ? updatedLocation : loc)
+      );
+      toast({
+        title: 'Success',
+        description: 'Location updated successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update location',
+        variant: 'destructive'
+      });
+      throw error;
     }
   };
 
-  const handleToggleLocation = async (locationId: string) => {
+  const handleDeleteLocation = async (id: string) => {
     try {
-      const location = locations.find(loc => loc._id === locationId);
-      if (!location) return;
-
-      await toggleLocation(locationId, !location.enabled);
-      setLocations(prev =>
-        prev.map(loc =>
-          loc._id === locationId ? { ...loc, enabled: !loc.enabled } : loc
-        )
-      );
-    } catch (err) {
-      console.error('Error toggling location:', err);
-    }
-  };
-
-  const handleToggleSpot = async (locationId: string, spotId: string) => {
-    try {
-      const location = locations.find(loc => loc._id === locationId);
-      if (!location) return;
-
-      const spot = location.spots.find(s => s.id === spotId);
-      if (!spot) return;
-
-      await toggleSpot(locationId, spotId, !spot.active);
-      setLocations(prev =>
-        prev.map(loc =>
-          loc._id === locationId
-            ? {
-                ...loc,
-                spots: loc.spots.map(s =>
-                  s.id === spotId ? { ...s, active: !s.active } : s
-                ),
-              }
-            : loc
-        )
-      );
-    } catch (err) {
-      console.error('Error toggling spot:', err);
+      await deleteLocation(id);
+      setLocations(prev => prev.filter(loc => loc.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Location deleted successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete location',
+        variant: 'destructive'
+      });
+      throw error;
     }
   };
 
   return {
     locations,
     isLoading,
-    error,
-    addLocation,
-    removeLocation: handleRemoveLocation,
-    toggleLocation: handleToggleLocation,
-    toggleSpot: handleToggleSpot,
+    addLocation: handleAddLocation,
+    updateLocation: handleUpdateLocation,
+    deleteLocation: handleDeleteLocation,
+    isAdmin: session?.user?.email === 'websitemaker923@gmail.com'
   };
 }
-
-export * from './types';

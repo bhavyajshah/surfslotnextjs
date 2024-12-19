@@ -15,12 +15,28 @@ declare module "next-auth" {
   }
 }
 
+
+import NextAuth from "next-auth"
+
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string
+  }
+}
+
+
+
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     accessToken?: string
     refreshToken?: string
     accessTokenExpires?: number
     error?: string
-    scope?: string
   }
 }
