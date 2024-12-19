@@ -1,19 +1,20 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth/config';
-import { AdminDashboard } from '@/components/admin/dashboard';
+import { redirect } from 'next/navigation'
+import { getServerSession } from 'next-auth'
+import { authConfig } from '@/lib/auth/config'
+import { AdminDashboard } from '@/components/admin/dashboard'
+import { isAdmin, isAuthenticated } from '@/lib/auth/utils/auth-checks'
+import { ROUTES } from '@/lib/constants'
 
 export default async function AdminPage() {
-  const session = await getServerSession(authConfig);
+  const session = await getServerSession(authConfig)
 
-  if (!session?.user?.email) {
-    redirect('/auth/signin');
+  if (!isAuthenticated(session)) {
+    redirect(ROUTES.AUTH.SIGNIN)
   }
 
-  // Only allow admin access
-  if (session.user.email !== 'websitemaker923@gmail.com') {
-    redirect('/dashboard');
+  if (!isAdmin(session?.user?.email)) {
+    redirect(ROUTES.DASHBOARD)
   }
 
-  return <AdminDashboard />;
+  return <AdminDashboard />
 }

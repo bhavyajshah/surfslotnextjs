@@ -1,8 +1,11 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Location, UseLocationsReturn } from './types';
 import { fetchLocations, addLocation, updateLocation, deleteLocation } from './api';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
+import { isAdmin } from '@/lib/auth/utils/auth-checks';
 
 export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -92,6 +95,6 @@ export function useLocations(): UseLocationsReturn {
     addLocation: handleAddLocation,
     updateLocation: handleUpdateLocation,
     deleteLocation: handleDeleteLocation,
-    isAdmin: session?.user?.email === 'websitemaker923@gmail.com'
+    isAdmin: isAdmin(session?.user?.email)
   };
 }
