@@ -1,26 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Location, UseLocationsReturn } from './types';
-import {
-  fetchLocationsApi,
-  removeLocationApi,
-  toggleLocationApi,
-  toggleSpotApi,
-} from './api';
+import { fetchLocations, removeLocation, toggleLocation, toggleSpot } from './api';
 
 export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchLocations();
+    loadLocations();
   }, []);
 
-  const fetchLocations = async () => {
+  const loadLocations = async () => {
     try {
-      const data = await fetchLocationsApi();
+      setIsLoading(true);
+      setError(null);
+      const data = await fetchLocations();
       setLocations(data);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
+    } catch (err) {
+      setError('Failed to fetch locations');
+      console.error('Error fetching locations:', err);
     } finally {
       setIsLoading(false);
     }
@@ -31,32 +30,32 @@ export function useLocations(): UseLocationsReturn {
     // To be implemented based on requirements
   };
 
-  const removeLocation = async (locationId: string) => {
+  const handleRemoveLocation = async (locationId: string) => {
     try {
-      await removeLocationApi(locationId);
+      await removeLocation(locationId);
       setLocations(prev => prev.filter(loc => loc.id !== locationId));
-    } catch (error) {
-      console.error('Error removing location:', error);
+    } catch (err) {
+      console.error('Error removing location:', err);
     }
   };
 
-  const toggleLocation = async (locationId: string) => {
+  const handleToggleLocation = async (locationId: string) => {
     try {
       const location = locations.find(loc => loc.id === locationId);
       if (!location) return;
 
-      await toggleLocationApi(locationId, !location.active);
+      await toggleLocation(locationId, !location.active);
       setLocations(prev =>
         prev.map(loc =>
           loc.id === locationId ? { ...loc, active: !loc.active } : loc
         )
       );
-    } catch (error) {
-      console.error('Error toggling location:', error);
+    } catch (err) {
+      console.error('Error toggling location:', err);
     }
   };
 
-  const toggleSpot = async (locationId: string, spotId: string) => {
+  const handleToggleSpot = async (locationId: string, spotId: string) => {
     try {
       const location = locations.find(loc => loc.id === locationId);
       if (!location) return;
@@ -64,7 +63,7 @@ export function useLocations(): UseLocationsReturn {
       const spot = location.spots.find(s => s.id === spotId);
       if (!spot) return;
 
-      await toggleSpotApi(locationId, spotId, !spot.active);
+      await toggleSpot(locationId, spotId, !spot.active);
       setLocations(prev =>
         prev.map(loc =>
           loc.id === locationId
@@ -77,18 +76,19 @@ export function useLocations(): UseLocationsReturn {
             : loc
         )
       );
-    } catch (error) {
-      console.error('Error toggling spot:', error);
+    } catch (err) {
+      console.error('Error toggling spot:', err);
     }
   };
 
   return {
     locations,
     isLoading,
+    error,
     addLocation,
-    removeLocation,
-    toggleLocation,
-    toggleSpot,
+    removeLocation: handleRemoveLocation,
+    toggleLocation: handleToggleLocation,
+    toggleSpot: handleToggleSpot,
   };
 }
 

@@ -1,6 +1,6 @@
 import { Location } from './types';
 
-export async function fetchLocationsApi(): Promise<Location[]> {
+export async function fetchLocations(): Promise<Location[]> {
   const response = await fetch('/api/locations');
   if (!response.ok) {
     throw new Error('Failed to fetch locations');
@@ -8,7 +8,7 @@ export async function fetchLocationsApi(): Promise<Location[]> {
   return response.json();
 }
 
-export async function removeLocationApi(locationId: string): Promise<void> {
+export async function removeLocation(locationId: string): Promise<void> {
   const response = await fetch(`/api/locations/${locationId}`, {
     method: 'DELETE',
   });
@@ -17,7 +17,7 @@ export async function removeLocationApi(locationId: string): Promise<void> {
   }
 }
 
-export async function toggleLocationApi(locationId: string, active: boolean): Promise<void> {
+export async function toggleLocation(locationId: string, active: boolean): Promise<void> {
   const response = await fetch(`/api/locations/${locationId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -28,7 +28,7 @@ export async function toggleLocationApi(locationId: string, active: boolean): Pr
   }
 }
 
-export async function toggleSpotApi(locationId: string, spotId: string, active: boolean): Promise<void> {
+export async function toggleSpot(locationId: string, spotId: string, active: boolean): Promise<void> {
   const response = await fetch(`/api/locations/${locationId}/spots/${spotId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

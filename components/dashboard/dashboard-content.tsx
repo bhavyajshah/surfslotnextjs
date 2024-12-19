@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User } from 'next-auth'
 import { LocationsTab } from './tabs/locations-tab'
 import { SettingsTab } from './tabs/settings-tab'
@@ -8,37 +8,28 @@ import { ScheduledTab } from './tabs/scheduled-tab'
 import { CalendarAccessNotification } from './notifications/calendar-access'
 import { SubscriptionNotification } from './notifications/subscription'
 import { UserDropdown } from './user-dropdown'
+import { signIn, useSession } from 'next-auth/react'
 
-export default function DashboardContent({ user }: any) {
+export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState('locations')
-  const [hasCalendarAccess, setHasCalendarAccess] = useState(false)
+  const [hasCalendarAccess, setHasCalendarAccess] = useState(true)
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
+  const { data: session } = useSession()
 
-  // Add error handling for missing user
+  useEffect(() => {
+    if (session?.accessToken) {
+      const scope = (session as any)?.scope || ''
+      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar')
+      setHasCalendarAccess(hasCalendarScope)
+    }
+  }, [session])
+
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Please sign in to access the dashboard</p>
       </div>
     )
-  }
-
-  const handleCalendarAccess = async () => {
-    try {
-      // Implement calendar access request
-      setHasCalendarAccess(true)
-    } catch (error) {
-      console.error('Failed to request calendar access:', error)
-    }
-  }
-
-  const handleSubscriptionActivate = async () => {
-    try {
-      // Implement subscription activation
-      setHasActiveSubscription(true)
-    } catch (error) {
-      console.error('Failed to activate subscription:', error)
-    }
   }
 
   return (
@@ -80,4 +71,23 @@ export default function DashboardContent({ user }: any) {
       </main>
     </div>
   )
+
+  async function handleCalendarAccess() {
+    try {
+      await signIn('google', {
+        callbackUrl: '/dashboard',
+        scope: 'https://www.googleapis.com/auth/calendar'
+      })
+    } catch (error) {
+      console.error('Failed to request calendar access:', error)
+    }
+  }
+
+  async function handleSubscriptionActivate() {
+    try {
+      setHasActiveSubscription(true)
+    } catch (error) {
+      console.error('Failed to activate subscription:', error)
+    }
+  }
 }
