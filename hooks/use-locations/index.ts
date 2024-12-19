@@ -79,6 +79,25 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
+  const handleDeleteLocation = async (id: string) => {
+    try {
+      await deleteLocation(id);
+      setLocations(prev => prev.filter(loc => loc.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Location deleted successfully'
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete location';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   return {
     locations,
     isLoading,

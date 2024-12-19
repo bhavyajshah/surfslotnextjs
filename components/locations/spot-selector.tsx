@@ -5,17 +5,15 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '../ui/checkbox';
 import { useUser } from '@/hooks/use-user';
+import { Spot } from '@/hooks/use-locations/types';
 
 interface SpotSelectorProps {
+    spots: Spot[];
     locationName: string;
-    spots: {
-        id: string;
-        name: string;
-        active: boolean;
-    }[];
+    onToggleSpot: (spotId: string) => void;
 }
 
-export function SpotSelector({ locationName, spots }: SpotSelectorProps) {
+export function SpotSelector({ locationName, spots, onToggleSpot }: SpotSelectorProps) {
     const { user, updateSelectedSpots, toggleCalendarNotifications } = useUser();
     const [isExpanded, setIsExpanded] = useState(true);
 
@@ -25,6 +23,7 @@ export function SpotSelector({ locationName, spots }: SpotSelectorProps) {
             : [...(user?.selectedSpots || []), spotId];
 
         updateSelectedSpots(newSelectedSpots);
+        onToggleSpot(spotId);
     };
 
     return (

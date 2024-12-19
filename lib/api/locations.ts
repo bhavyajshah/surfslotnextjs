@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma';
+import { Location, Spot } from '@/hooks/use-locations/types';
 
 export async function getLocations() {
   try {
-    const locations = await prisma.location.findMany({
+    return await prisma.location.findMany({
       include: {
         spots: {
           select: {
@@ -14,35 +15,30 @@ export async function getLocations() {
         }
       }
     });
-    return locations;
   } catch (error) {
     console.error('Error fetching locations:', error);
     throw new Error('Failed to fetch locations');
   }
 }
 
-export async function createLocation(data: {
-  name: string;
-  city: string;
-  spots?: { name: string; active?: boolean; conditions?: any }[];
-}) {
+export async function createLocation(data: Partial<Location>) {
   try {
     return await prisma.location.create({
       data: {
-        name: data.name,
-        city: data.city,
+        name: data.name!,
+        city: data.city!,
         active: false,
         spots: {
           create: data.spots?.map(spot => ({
-            name: spot.name,
-            active: spot.active ?? false,
-            conditions: spot.conditions ?? {
+            name: spot.name!,
+            active: false,
+            conditions: spot.conditions || {
               waveHeight: 'medium',
               wind: 'offshore',
               tide: 'mid',
               bestTimeToSurf: ['morning', 'evening']
             }
-          })) ?? []
+          })) || []
         }
       },
       include: {
@@ -52,5 +48,34 @@ export async function createLocation(data: {
   } catch (error) {
     console.error('Error creating location:', error);
     throw new Error('Failed to create location');
+  }
+}
+
+export async function updateLocation(id: string, data: Partial<Location>) {
+  try {
+    return await prisma.location.update({
+      where: { id },
+      data: {
+        ...data,
+        updatedAt: new Date()
+      },
+      include: {
+        spots: true
+      }
+    });
+  } catch (error) {
+    console.error('Error updating location:', error);
+    throw new Error('Failed to update location');
+  }
+}
+
+export async function deleteLocation(id: string) {
+  try {
+    await prisma.location.delete({
+      where: { id }
+    });
+  } catch (error) {
+    console.error('Error deleting location:', error);
+    throw new Error('Failed to delete location');
   }
 }

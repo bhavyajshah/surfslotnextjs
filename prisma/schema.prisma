@@ -8,13 +8,13 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  email             String   @unique
-  name              String?
-  calendarNotifications Boolean @default(false)
-  selectedSpots     String[] @default([])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  email                 String   @unique
+  name                  String?
+  calendarNotifications Boolean  @default(false)
+  selectedSpots         String[] @default([])
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model Location {
@@ -28,31 +28,24 @@ model Location {
 }
 
 model Spot {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  active      Boolean   @default(false)
-  conditions  SpotConditions?
-  dailyUpdates DailyUpdate[]
-  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  locationId  String    @db.ObjectId
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-type SpotConditions {
-  waveHeight     String?
-  wind           String?
-  tide           String?
-  bestTimeToSurf String[]
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  active        Boolean        @default(false)
+  conditions    Json?
+  dailyUpdates  DailyUpdate[]
+  location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId    String         @db.ObjectId
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model DailyUpdate {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  spotId      String   @db.ObjectId
-  spot        Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  message     String
-  startTime   DateTime
-  endTime     DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  spotId    String   @db.ObjectId
+  spot      Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  message   String
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
