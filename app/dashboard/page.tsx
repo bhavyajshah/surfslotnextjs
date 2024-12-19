@@ -1,15 +1,10 @@
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
+import { requireAuth } from "@/lib/auth/session"
 import { Suspense } from "react"
 import DashboardContent from "@/components/dashboard/dashboard-content"
 import { ErrorBoundary } from "react-error-boundary"
 
 export default async function DashboardPage() {
-  const session = await auth()
-
-  if (!session) {
-    redirect("/auth/signin")
-  }
+  const session = await requireAuth()
 
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>

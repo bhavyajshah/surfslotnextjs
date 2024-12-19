@@ -26,14 +26,31 @@ export function useLocations(): UseLocationsReturn {
   };
 
   const addLocation = async () => {
-    // Implementation for adding a new location
-    // To be implemented based on requirements
+    try {
+      const response = await fetch('/api/locations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add location');
+      }
+
+      const newLocation = await response.json();
+      setLocations(prev => [...prev, newLocation]);
+      return newLocation;
+    } catch (error) {
+      console.error('Error adding location:', error);
+      throw error;
+    }
   };
 
   const handleRemoveLocation = async (locationId: string) => {
     try {
       await removeLocation(locationId);
-      setLocations(prev => prev.filter(loc => loc.id !== locationId));
+      setLocations(prev => prev.filter(loc => loc._id !== locationId));
     } catch (err) {
       console.error('Error removing location:', err);
     }
@@ -41,13 +58,13 @@ export function useLocations(): UseLocationsReturn {
 
   const handleToggleLocation = async (locationId: string) => {
     try {
-      const location = locations.find(loc => loc.id === locationId);
+      const location = locations.find(loc => loc._id === locationId);
       if (!location) return;
 
-      await toggleLocation(locationId, !location.active);
+      await toggleLocation(locationId, !location.enabled);
       setLocations(prev =>
         prev.map(loc =>
-          loc.id === locationId ? { ...loc, active: !loc.active } : loc
+          loc._id === locationId ? { ...loc, enabled: !loc.enabled } : loc
         )
       );
     } catch (err) {
@@ -57,7 +74,7 @@ export function useLocations(): UseLocationsReturn {
 
   const handleToggleSpot = async (locationId: string, spotId: string) => {
     try {
-      const location = locations.find(loc => loc.id === locationId);
+      const location = locations.find(loc => loc._id === locationId);
       if (!location) return;
 
       const spot = location.spots.find(s => s.id === spotId);
@@ -66,7 +83,7 @@ export function useLocations(): UseLocationsReturn {
       await toggleSpot(locationId, spotId, !spot.active);
       setLocations(prev =>
         prev.map(loc =>
-          loc.id === locationId
+          loc._id === locationId
             ? {
                 ...loc,
                 spots: loc.spots.map(s =>
