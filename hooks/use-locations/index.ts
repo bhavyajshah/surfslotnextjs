@@ -1,8 +1,7 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { Location, UseLocationsReturn } from './types';
-import { fetchLocations, addLocation, updateLocation, deleteLocation } from './api';
+import { addLocation, updateLocation, deleteLocation } from './api';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 import { isAdmin } from '@/lib/auth/utils/auth-checks';
@@ -22,7 +21,17 @@ export function useLocations(): UseLocationsReturn {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchLocations();
+       const response = await fetch('/api/locations');
+
+      if (!response.ok) {
+
+        const error = await response.json();
+
+        throw new Error(error.error || 'Failed to fetch locations');
+
+      }
+
+      const data = await response.json();
       setLocations(data);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch locations';

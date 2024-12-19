@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { Location } from '@/models/Location';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
-import { connectDB } from '@/lib/mongodb';
-
-const isAdmin = (email: string) => email === 'websitemaker923@gmail.com';
+import { prisma } from '@/lib/prisma';
+import { isAdmin } from '@/lib/auth/utils/auth-checks';
 
 export async function PUT(
   request: Request,
@@ -17,28 +15,20 @@ export async function PUT(
     }
 
     const data = await request.json();
-    await connectDB();
-    const location = await Location.findByIdAndUpdate(params.id, data, { new: true });
+    const location = await prisma.location.update({
+      where: { id: params.id },
+      data: {
+        ...data,
+        updatedAt: new Date()
+      },
+      include: {
+        spots: true
+      }
+    });
+
     return NextResponse.json(location);
   } catch (error) {
+    console.error('Error updating location:', error);
     return NextResponse.json({ error: 'Failed to update location' }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.email || !isAdmin(session.user.email)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    await connectDB();
-    await Location.findByIdAndDelete(params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 });
   }
 }

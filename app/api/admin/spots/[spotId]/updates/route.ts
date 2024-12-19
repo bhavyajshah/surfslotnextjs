@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+  import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
@@ -26,6 +26,11 @@ export async function POST(
     });
 
     // Notify users who have selected this spot
+    const spot = await prisma.spot.findUnique({
+      where: { id: params.spotId },
+      include: { location: true }
+    });
+
     const usersToNotify = await prisma.user.findMany({
       where: {
         selectedSpots: {
@@ -35,41 +40,17 @@ export async function POST(
       }
     });
 
-    // Here you would implement notification logic for selected users
-    // This could be email, push notifications, etc.
+    // Create calendar events for each user
+    for (const user of usersToNotify) {
+      // Here you would implement the Google Calendar event creation
+      // This will be handled by a separate service/webhook
+    }
 
     return NextResponse.json(update);
   } catch (error) {
     console.error('Error creating spot update:', error);
     return NextResponse.json(
       { error: 'Failed to create update' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(
-  request: Request,
-  { params }: { params: { spotId: string } }
-) {
-  try {
-    const updates = await prisma.dailyUpdate.findMany({
-      where: {
-        spotId: params.spotId,
-        endTime: {
-          gte: new Date()
-        }
-      },
-      orderBy: {
-        startTime: 'asc'
-      }
-    });
-
-    return NextResponse.json(updates);
-  } catch (error) {
-    console.error('Error fetching spot updates:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch updates' },
       { status: 500 }
     );
   }

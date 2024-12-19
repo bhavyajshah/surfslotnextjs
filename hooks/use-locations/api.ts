@@ -3,7 +3,8 @@ import { Location } from './types';
 export async function fetchLocations(): Promise<Location[]> {
   const response = await fetch('/api/locations');
   if (!response.ok) {
-    throw new Error('Failed to fetch locations');
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch locations');
   }
   return response.json();
 }
@@ -15,7 +16,8 @@ export async function addLocation(data: Partial<Location>): Promise<Location> {
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error('Failed to add location');
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to add location');
   }
   return response.json();
 }
@@ -27,7 +29,8 @@ export async function updateLocation(id: string, data: Partial<Location>): Promi
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error('Failed to update location');
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update location');
   }
   return response.json();
 }
@@ -37,6 +40,7 @@ export async function deleteLocation(id: string): Promise<void> {
     method: 'DELETE',
   });
   if (!response.ok) {
-    throw new Error('Failed to delete location');
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete location');
   }
 }
