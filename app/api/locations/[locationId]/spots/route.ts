@@ -3,14 +3,16 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { locationId: string } }
 ) {
   try {
     const data = await request.json();
     const spot = await prisma.spot.create({
       data: {
         ...data,
-        locationId: params.id
+        location: {
+          connect: { id: params.locationId }
+        }
       }
     });
     return NextResponse.json(spot);
