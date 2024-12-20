@@ -9,14 +9,17 @@ interface LocationDropdownProps {
 }
 
 export function LocationDropdown({ locations, onChange }: LocationDropdownProps) {
+    const availableLocations = locations.filter(loc => !loc.active);
+
     return (
         <Select
-            options={locations.map(loc => ({
+            options={availableLocations.map(loc => ({
                 label: `${loc.name}, ${loc.city}`,
                 value: loc.id
             }))}
             onChange={onChange}
             placeholder="Select a surf location"
+            className="w-full"
         />
     );
 }

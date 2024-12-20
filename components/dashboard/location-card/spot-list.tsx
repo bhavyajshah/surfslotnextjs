@@ -1,5 +1,5 @@
 import { Spot } from '@/hooks/use-locations/types';
-import { Switch } from '@radix-ui/react-switch';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface SpotListProps {
     spots: Spot[];
@@ -8,17 +8,24 @@ interface SpotListProps {
 
 export function SpotList({ spots, onToggleSpot }: SpotListProps) {
     return (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-2 border-t pt-4">
             {spots.map(spot => (
                 <div
                     key={spot.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                    className="flex items-center gap-3"
                 >
-                    <span>{spot.name}</span>
-                    <Switch
+                    <Checkbox
+                        id={spot.id}
                         checked={spot.active}
                         onCheckedChange={() => onToggleSpot(spot.id)}
+                        className="h-4 w-4 rounded border-gray-300"
                     />
+                    <label
+                        htmlFor={spot.id}
+                        className="text-sm text-gray-700 cursor-pointer"
+                    >
+                        {spot.name}
+                    </label>
                 </div>
             ))}
         </div>

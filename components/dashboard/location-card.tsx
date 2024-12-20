@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Location } from '@/types/location';
-import { Switch } from '@radix-ui/react-switch';
+import { Switch } from '../ui/switch';
 
 interface LocationCardProps {
   location: Location;
