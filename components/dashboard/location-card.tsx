@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
-import { Location } from '@/types/location';
-import { Switch } from '../ui/switch';
+import * as React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Location } from '@/hooks/use-locations/types';
 
 interface LocationCardProps {
   location: Location;
@@ -12,57 +15,92 @@ interface LocationCardProps {
   onToggleSpot: (spotId: string) => void;
 }
 
-export function LocationCard({ location, onToggle, onRemove, onToggleSpot }: LocationCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function LocationCard({ location, onToggle, onRemove, onToggleSpot }: any) {
+  const [isHidden, setIsHidden] = React.useState(false);
+
+  const handleCheckboxChange = (spotId: string) => {
+    onToggleSpot(spotId);
+  };
+
+  const isComingSoon = location.comingSoon;
+
+  if (isComingSoon) {
+    return (
+      <Card className="w-full bg-gray-50">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-gray-500 text-xl sm:text-2xl">{location.name}</CardTitle>
+            <span className="text-sm text-gray-400">(Coming soon)</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 text-sm sm:text-base">View surf spots in {location.name}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className={`border rounded-lg p-4 ${location.active ? 'bg-white' : 'bg-gray-100'}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold">{location.name}</h3>
-          <span className="text-sm text-muted-foreground">
-            {location.comingSoon ? '(Coming soon)' : ''}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch checked={location.active} onCheckedChange={onToggle} />
-          <button
-            onClick={onRemove}
-            className="text-muted-foreground hover:text-destructive"
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <CardTitle className="text-xl sm:text-2xl">{location.name}</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsHidden(!isHidden)}
+            className="text-blue-600 font-normal text-sm w-full sm:w-auto sm:text-xs"
           >
-            <X className="h-4 w-4" />
-          </button>
+            {isHidden ? (
+              <span className="flex items-center justify-center sm:justify-start w-full">
+                Show surf spots in {location.name}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </span>
+            ) : (
+              <span className="flex items-center justify-center sm:justify-start w-full">
+                Hide surf spots in {location.name}
+                <ChevronUp className="ml-2 h-4 w-4" />
+              </span>
+            )}
+          </Button>
         </div>
-      </div>
-
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        View surf spots in {location.name}
-        {isExpanded ? (
-          <ChevronUp className="h-4 w-4" />
-        ) : (
-          <ChevronDown className="h-4 w-4" />
-        )}
-      </button>
-
-      {isExpanded && (
-        <div className="mt-4 space-y-2">
-          {location.spots.map(spot => (
-            <div
-              key={spot.id}
-              className="flex items-center justify-between p-2 bg-gray-50 rounded"
-            >
-              <span>{spot.name}</span>
-              <Switch
+      </CardHeader>
+      <CardContent>
+        {!isHidden && (
+            <div className="grid gap-4">
+            {location.spots.map((spot: { id: string; active: boolean; name: string }) => (
+              <div key={spot.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={spot.id}
                 checked={spot.active}
-                onCheckedChange={() => onToggleSpot(spot.id)}
+                onCheckedChange={() => handleCheckboxChange(spot.id)}
+              />
+              <label
+                htmlFor={spot.id}
+                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {spot.name}
+              </label>
+              </div>
+            ))}
+            <div className="flex justify-end items-center gap-2 pt-2">
+              <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-gray-500"
+              onClick={onRemove}
+              >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+              </Button>
+              <Switch
+              checked={location.active}
+              onCheckedChange={onToggle}
               />
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+            </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -2,12 +2,11 @@
 
 import { User } from 'next-auth';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LocationCard } from '@/components/dashboard/location-card';
 import { useLocations } from '@/hooks/use-locations';
 import { Alert } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -20,12 +19,22 @@ export function LocationsTab({ user }: LocationsTabProps) {
   const [showLocationSelect, setShowLocationSelect] = useState(false);
   const { toast } = useToast();
 
-  const availableLocations = locations.filter(loc => !loc.active);
-  const activeLocations = locations.filter(loc => loc.active);
+  interface Location {
+    id: string;
+    name: string;
+    city: string;
+    active: boolean;
+  }
+
+  const availableLocations: Location[] = locations.filter((loc: Location) => !loc.active);
+
+  interface ActiveLocation extends Location { }
+
+  const activeLocations: ActiveLocation[] = locations.filter((loc: Location) => loc.active);
 
   const handleLocationSelect = async (locationId: string) => {
     try {
-      const location = locations.find(loc => loc.id === locationId);
+      const location = locations.find((loc: { id: string; }) => loc.id === locationId);
       if (!location) return;
 
       await updateLocation(locationId, { active: true });
@@ -75,8 +84,8 @@ export function LocationsTab({ user }: LocationsTabProps) {
                 label: `${loc.name}, ${loc.city}`,
                 value: loc.id
               }))}
-              onChange={handleLocationSelect}
-              placeholder="Select a location to monitor"
+              onChange={(value: any) => handleLocationSelect(value)}
+
             />
           ) : (
             <Alert>
@@ -92,7 +101,7 @@ export function LocationsTab({ user }: LocationsTabProps) {
           <LocationCard
             key={location.id}
             location={location}
-            onToggleSpot={(spotId) => toggleSpot(location.id, spotId)}
+            onToggleSpot={(spotId: any) => toggleSpot(location.id, spotId)}
           />
         ))}
       </div>
