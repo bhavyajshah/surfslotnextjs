@@ -1,12 +1,13 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Location, UseLocationsReturn } from './types';
-import { addLocation, updateLocation, deleteLocation } from './api';
+import { addLocation, updateLocation as updateLocationApi, deleteLocation } from './api';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 import { isAdmin } from '@/lib/auth/utils/auth-checks';
 
-export function useLocations(): any {
+export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,16 +22,11 @@ export function useLocations(): any {
     try {
       setIsLoading(true);
       setError(null);
-       const response = await fetch('/api/locations');
-
+      const response = await fetch('/api/locations');
       if (!response.ok) {
-
         const error = await response.json();
-
         throw new Error(error.error || 'Failed to fetch locations');
-
       }
-
       const data = await response.json();
       setLocations(data);
     } catch (error) {
@@ -46,29 +42,9 @@ export function useLocations(): any {
     }
   };
 
-  const handleAddLocation = async (data: Partial<Location>) => {
-    try {
-      const newLocation = await addLocation(data);
-      setLocations(prev => [...prev, newLocation]);
-      toast({
-        title: 'Success',
-        description: 'Location added successfully'
-      });
-      return newLocation;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add location';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
-      });
-      throw error;
-    }
-  };
-
   const handleUpdateLocation = async (id: string, data: Partial<Location>) => {
     try {
-      const updatedLocation = await updateLocation(id, data);
+      const updatedLocation = await updateLocationApi(id, data);
       setLocations(prev =>
         prev.map(loc => loc.id === id ? updatedLocation : loc)
       );
@@ -79,6 +55,35 @@ export function useLocations(): any {
       return updatedLocation;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update location';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
+  const handleToggleSpot = async (locationId: string, spotId: string) => {
+    try {
+      const location = locations.find(loc => loc.id === locationId);
+      if (!location) throw new Error('Location not found');
+
+      const spot = location.spots.find(s => s.id === spotId);
+      if (!spot) throw new Error('Spot not found');
+
+      const updatedSpots = location.spots.map(s =>
+        s.id === spotId ? { ...s, active: !s.active } : s
+      );
+
+      const updatedLocation = await handleUpdateLocation(locationId, {
+        ...location,
+        spots: updatedSpots
+      });
+
+      return updatedLocation;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to toggle spot';
       toast({
         title: 'Error',
         description: message,
@@ -111,9 +116,10 @@ export function useLocations(): any {
     locations,
     isLoading,
     error,
-    addLocation: handleAddLocation,
+    addLocation,
     updateLocation: handleUpdateLocation,
     deleteLocation: handleDeleteLocation,
+    toggleSpot: handleToggleSpot,
     refresh: loadLocations,
     isAdmin: isAdmin(session?.user?.email)
   };

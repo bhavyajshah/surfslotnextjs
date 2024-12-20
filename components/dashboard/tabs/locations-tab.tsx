@@ -58,7 +58,7 @@ export function LocationsTab({ user }: LocationsTabProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mt-8 mb-8">
         <div className="flex items-center gap-4">
           <img
             src={user.image || ''}

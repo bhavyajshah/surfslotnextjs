@@ -7,17 +7,10 @@ export default withAuth(
     const { pathname } = req.nextUrl
     const userEmail = req.nextauth.token?.email
 
-    // Admin routes protection
-    if (pathname.startsWith('/admin')) {
-      if (userEmail !== ADMIN_EMAIL) {
-        return NextResponse.redirect(new URL(ROUTES.DASHBOARD, req.url))
-      }
-    }
-
     // Dashboard routes protection
     if (pathname.startsWith('/dashboard')) {
       if (userEmail === ADMIN_EMAIL) {
-        return NextResponse.redirect(new URL(ROUTES.ADMIN, req.url))
+        return NextResponse.redirect(new URL(ROUTES.DASHBOARD, req.url))
       }
     }
 
