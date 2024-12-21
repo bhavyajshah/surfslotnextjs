@@ -1,155 +1,66 @@
 # Surfslot API Documentation
 
-## Authentication
-All API endpoints require authentication using NextAuth session. Include the session cookie in all requests.
+## Getting Started
 
-## Admin Endpoints
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+- Postman for API testing
 
-### Create Location
+### Installation
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/surfslot.git
+cd surfslot
+```
+
+2. Install dependencies
+```bash
+npm install
+```
+
+3. Set up environment variables
+```bash
+cp .env.example .env
+```
+
+4. Start the development server
+```bash
+npm run dev
+```
+
+## API Documentation
+
+### Authentication
+All API endpoints require authentication using NextAuth session. The session token must be included in the request cookies.
+
+### Base URL
+```
+http://localhost:3000/api
+```
+
+### Endpoints
+
+#### 1. Locations
+
+##### Get All Locations
 ```http
-POST /api/admin/locations
-Content-Type: application/json
-
-{
-  "name": "Ericeira",
-  "spots": [
-    {
-      "name": "Coxos",
-      "id": "5842041f4e65fad6a7708bc4"
-    },
-    {
-      "name": "Ribeira d'Ilhas",
-      "id": "5842041f4e65fad6a7708bc2"
-    }
-  ]
-}
+GET /locations
 ```
 
-### Delete Location
-```http
-DELETE /api/admin/locations
-Content-Type: application/json
-
-{
-  "locationId": "location_id"
-}
-```
-
-## User Endpoints
-
-### Get User Locations
-```http
-GET /api/user/locations
-```
-
-### Add Location to User
-```http
-POST /api/user/locations
-Content-Type: application/json
-
-{
-  "locationId": "location_id"
-}
-```
-
-### Remove Location from User
-```http
-DELETE /api/user/locations/{locationId}
-```
-
-### Update Spot Status
-```http
-PUT /api/user/locations/{locationId}/spots
-Content-Type: application/json
-
-{
-  "spotId": "spot_id",
-  "enabled": true
-}
-```
-
-### Get User Slots
-```http
-GET /api/slots
-```
-
-## Testing with Postman
-
-1. Set up environment variables:
-```
-BASE_URL=http://localhost:3000
-```
-
-2. Add auth cookie:
-- Sign in through the web interface
-- Copy the `next-auth.session-token` cookie
-- Add it to your Postman requests
-
-3. Create a new collection and import the following requests:
-
-```json
-{
-  "info": {
-    "name": "Surfslot API"
-  },
-  "item": [
-    {
-      "name": "Admin - Create Location",
-      "request": {
-        "method": "POST",
-        "url": "{{BASE_URL}}/api/admin/locations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Ericeira\",\n  \"spots\": [\n    {\n      \"name\": \"Coxos\",\n      \"id\": \"5842041f4e65fad6a7708bc4\"\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "User - Get Locations",
-      "request": {
-        "method": "GET",
-        "url": "{{BASE_URL}}/api/user/locations"
-      }
-    },
-    {
-      "name": "User - Add Location",
-      "request": {
-        "method": "POST",
-        "url": "{{BASE_URL}}/api/user/locations",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"locationId\": \"your_location_id\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    }
-  ]
-}
-```
-
-## Response Examples
-
-### Location List
+Response:
 ```json
 {
   "locations": [
     {
       "id": "location_id",
       "name": "Ericeira",
+      "active": true,
       "spots": [
         {
           "id": "spot_id",
           "name": "Coxos",
-          "externalId": "5842041f4e65fad6a7708bc4"
+          "active": true
         }
       ]
     }
@@ -157,37 +68,137 @@ BASE_URL=http://localhost:3000
 }
 ```
 
-### User Location
-```json
+##### Add Location
+```http
+POST /locations
+Content-Type: application/json
+
 {
-  "id": "user_location_id",
-  "locationId": "location_id",
-  "locationName": "Ericeira",
-  "enabled": true,
+  "name": "Ericeira",
   "spots": [
     {
-      "id": "user_spot_id",
-      "spotId": "spot_id",
-      "enabled": true
+      "name": "Coxos",
+      "id": "spot_123"
     }
   ]
 }
 ```
 
-### Surf Slots
+##### Update Location
+```http
+PUT /locations/{locationId}
+Content-Type: application/json
+
+{
+  "active": true
+}
+```
+
+#### 2. Spots
+
+##### Toggle Spot Status
+```http
+PATCH /locations/{locationId}/spots/{spotId}
+Content-Type: application/json
+
+{
+  "active": true
+}
+```
+
+#### 3. User Settings
+
+##### Update Notifications
+```http
+PUT /user/notifications
+Content-Type: application/json
+
+{
+  "enabled": true
+}
+```
+
+## Testing with Postman
+
+1. Set up a new Postman environment
+2. Add the following variables:
+   - `baseUrl`: `http://localhost:3000/api`
+   - `authToken`: Your NextAuth session token
+
+3. Import the following collection:
+
 ```json
 {
-  "slots": [
+  "info": {
+    "name": "Surfslot API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
     {
-      "id": "slot_id",
-      "startTime": "2024-03-20T08:00:00Z",
-      "endTime": "2024-03-20T10:00:00Z",
-      "conditions": {
-        "waveHeight": "Good",
-        "wind": "Offshore",
-        "tide": "Mid"
+      "name": "Get Locations",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/locations",
+        "headers": {
+          "Cookie": "next-auth.session-token={{authToken}}"
+        }
+      }
+    },
+    {
+      "name": "Add Location",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/locations",
+        "headers": {
+          "Cookie": "next-auth.session-token={{authToken}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ericeira\",\n  \"spots\": [\n    {\n      \"name\": \"Coxos\",\n      \"id\": \"spot_123\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Toggle Spot",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/locations/{{locationId}}/spots/{{spotId}}",
+        "headers": {
+          "Cookie": "next-auth.session-token={{authToken}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"active\": true\n}"
+        }
       }
     }
   ]
+}
+```
+
+### Getting the Auth Token
+
+1. Sign in to the application through the web interface
+2. Open browser DevTools (F12)
+3. Go to Application > Cookies
+4. Copy the value of `next-auth.session-token`
+5. Paste it as the `authToken` variable in Postman
+
+## Error Handling
+
+All API endpoints return standard HTTP status codes:
+
+- 200: Success
+- 400: Bad Request
+- 401: Unauthorized
+- 404: Not Found
+- 500: Internal Server Error
+
+Error Response Format:
+```json
+{
+  "error": "Error message description"
 }
 ```
