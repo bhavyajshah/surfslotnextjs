@@ -78,14 +78,14 @@ export default function DashboardContent({ user }: { user: User }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b">
+      <header>
         <div className="container mx-auto px-4 flex justify-between items-center h-16">
-          <h1 className="text-2xl font-medium">my surfslots</h1>
           <UserNav user={user} />
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8 flex-1">
+        <h1 className="text-3xl font-medium">my surfslots</h1>
         <div className="border-b mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full justify-start space-x-8 h-auto bg-transparent p-0">

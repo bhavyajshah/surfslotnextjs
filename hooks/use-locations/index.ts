@@ -40,6 +40,38 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
+  const addLocation = async (data: Partial<Location>) => {
+    try {
+      const response = await fetch('/api/locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add location');
+      }
+
+      const newLocation = await response.json();
+      setLocations(prev => [...prev, newLocation]);
+
+      toast({
+        title: 'Success',
+        description: 'Location added successfully'
+      });
+
+      return newLocation;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add location';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   const updateLocation = async (id: string, data: Partial<Location>) => {
     try {
       const response = await fetch(`/api/locations/${id}`, {
@@ -148,6 +180,7 @@ export function useLocations(): UseLocationsReturn {
     locations,
     isLoading,
     error,
+    addLocation,
     updateLocation,
     deleteLocation,
     toggleSpot,

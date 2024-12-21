@@ -30,13 +30,13 @@ export function ScheduledTab() {
   }
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
+    <div className="space-y-4 max-w-6xl mx-auto">
       {slots.map(slot => (
         <Card key={slot.id} className="p-6 hover:shadow-md transition-shadow">
-          <h3 className="text-lg font-medium">
+          <h3 className="text-xl text-black font-medium">
             {slot.date} from {slot.startTime} to {slot.endTime}
           </h3>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 text-md mt-1">
             {slot.conditions} in {slot.spot} at {slot.location}
           </p>
         </Card>
