@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Location, UseLocationsReturn } from './types';
-import { addLocation, updateLocation as updateLocationApi, deleteLocation } from './api';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 import { isAdmin } from '@/lib/auth/utils/auth-checks';
@@ -24,8 +23,7 @@ export function useLocations(): UseLocationsReturn {
       setError(null);
       const response = await fetch('/api/locations');
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch locations');
+        throw new Error('Failed to fetch locations');
       }
       const data = await response.json();
       setLocations(data);
@@ -42,16 +40,28 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
-  const handleUpdateLocation = async (id: string, data: Partial<Location>) => {
+  const updateLocation = async (id: string, data: Partial<Location>) => {
     try {
-      const updatedLocation = await updateLocationApi(id, data);
+      const response = await fetch(`/api/locations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update location');
+      }
+
+      const updatedLocation = await response.json();
       setLocations(prev =>
         prev.map(loc => loc.id === id ? updatedLocation : loc)
       );
+
       toast({
         title: 'Success',
         description: 'Location updated successfully'
       });
+
       return updatedLocation;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update location';
@@ -64,7 +74,7 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
-  const handleToggleSpot = async (locationId: string, spotId: string) => {
+  const toggleSpot = async (locationId: string, spotId: string) => {
     try {
       const location = locations.find(loc => loc.id === locationId);
       if (!location) throw new Error('Location not found');
@@ -72,16 +82,31 @@ export function useLocations(): UseLocationsReturn {
       const spot = location.spots.find(s => s.id === spotId);
       if (!spot) throw new Error('Spot not found');
 
-      const updatedSpots = location.spots.map(s =>
-        s.id === spotId ? { ...s, active: !s.active } : s
-      );
-
-      const updatedLocation = await handleUpdateLocation(locationId, {
-        ...location,
-        spots: updatedSpots
+      const response = await fetch(`/api/locations/${locationId}/spots/${spotId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !spot.active })
       });
 
-      return updatedLocation;
+      if (!response.ok) {
+        throw new Error('Failed to toggle spot');
+      }
+
+      const updatedSpot = await response.json();
+      setLocations(prev =>
+        prev.map(loc =>
+          loc.id === locationId
+            ? {
+                ...loc,
+                spots: loc.spots.map(s =>
+                  s.id === spotId ? { ...s, active: !s.active } : s
+                )
+              }
+            : loc
+        )
+      );
+
+      return updatedSpot;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to toggle spot';
       toast({
@@ -93,13 +118,20 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
-  const handleDeleteLocation = async (id: string) => {
+  const deleteLocation = async (id: string) => {
     try {
-      await deleteLocation(id);
+      const response = await fetch(`/api/locations/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete location');
+      }
+
       setLocations(prev => prev.filter(loc => loc.id !== id));
       toast({
         title: 'Success',
-        description: 'Location deleted successfully'
+        description: 'Location removed successfully'
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete location';
@@ -116,10 +148,9 @@ export function useLocations(): UseLocationsReturn {
     locations,
     isLoading,
     error,
-    addLocation,
-    updateLocation: handleUpdateLocation,
-    deleteLocation: handleDeleteLocation,
-    toggleSpot: handleToggleSpot,
+    updateLocation,
+    deleteLocation,
+    toggleSpot,
     refresh: loadLocations,
     isAdmin: isAdmin(session?.user?.email)
   };

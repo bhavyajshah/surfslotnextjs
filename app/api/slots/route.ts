@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 
@@ -9,27 +8,35 @@ export async function GET() {
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Get user's slots
-    const slots = await prisma.userSlot.findMany({
-      where: {
-        userId: user.id,
-        startTime: {
-          gte: new Date() // Only future slots
-        }
+    const slots = [
+      {
+        id: '1',
+        date: 'Wed 12th November',
+        startTime: '12:00',
+        endTime: '14:00',
+        location: 'Reef',
+        spot: 'Coxos',
+        conditions: 'Good surf conditions'
       },
-      orderBy: {
-        startTime: 'asc'
+      {
+        id: '2',
+        date: 'Wed 12th November',
+        startTime: '12:00',
+        endTime: '14:00',
+        location: 'Reef',
+        spot: 'Coxos',
+        conditions: 'Good surf conditions'
+      },
+      {
+        id: '3',
+        date: 'Wed 12th November',
+        startTime: '12:00',
+        endTime: '14:00',
+        location: 'Reef',
+        spot: 'Coxos',
+        conditions: 'Good surf conditions'
       }
-    });
+    ];
 
     return NextResponse.json(slots);
   } catch (error) {

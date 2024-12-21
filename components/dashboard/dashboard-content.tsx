@@ -1,28 +1,28 @@
-'use client'
+'use client';
 
-import * as React from "react"
-import { User } from 'next-auth'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
+import * as React from "react";
+import { User } from 'next-auth';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, ChevronDown, ChevronUp } from 'lucide-react'
-import { useLocations } from "@/hooks/use-locations"
-import { useScheduledSlots } from "@/hooks/use-scheduled-slots"
-import { signOut } from "next-auth/react"
-import { LocationSearch } from "./location-search"
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useLocations } from "@/hooks/use-locations";
+import { signOut } from "next-auth/react";
+import { LocationSearch } from "./location-search";
+import { ScheduledTab } from "./tabs/scheduled-tab";
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/' })
-  }
+    signOut({ callbackUrl: '/' });
+  };
 
   return (
     <DropdownMenu>
@@ -33,36 +33,48 @@ function UserNav({ user }: { user: User }) {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuItem>
-          Manage subscription
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSignOut}>
-          Log out
-        </DropdownMenuItem>
+        <DropdownMenuItem>Manage subscription</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
 export default function DashboardContent({ user }: { user: User }) {
-  const { locations, updateLocation, toggleSpot } = useLocations()
-  const { slots } = useScheduledSlots()
-  const [expandedLocations, setExpandedLocations] = React.useState<Record<string, boolean>>({})
+  const { locations, updateLocation, toggleSpot, deleteLocation } = useLocations();
+  const [expandedLocations, setExpandedLocations] = React.useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = React.useState("locations");
 
   const toggleLocationExpand = (locationId: string) => {
     setExpandedLocations(prev => ({
       ...prev,
       [locationId]: !prev[locationId]
-    }))
-  }
+    }));
+  };
 
   const handleSpotToggle = async (locationId: string, spotId: string) => {
-    await toggleSpot(locationId, spotId)
-  }
+    try {
+      await toggleSpot(locationId, spotId);
+    } catch (error) {
+      console.error('Error toggling spot:', error);
+    }
+  };
 
   const handleLocationToggle = async (locationId: string, active: boolean) => {
-    await updateLocation(locationId, { active })
-  }
+    try {
+      await updateLocation(locationId, { active });
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
+  };
+
+  const handleLocationDelete = async (locationId: string) => {
+    try {
+      await deleteLocation(locationId);
+    } catch (error) {
+      console.error('Error deleting location:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -75,7 +87,7 @@ export default function DashboardContent({ user }: { user: User }) {
 
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="border-b mb-8">
-          <Tabs defaultValue="locations" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full justify-start space-x-8 h-auto bg-transparent p-0">
               <TabsTrigger
                 value="locations"
@@ -110,9 +122,9 @@ export default function DashboardContent({ user }: { user: User }) {
               </div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {locations.filter(loc => loc.active).map((location: any) => (
+                {locations.filter(loc => loc.active).map((location) => (
                   <Card key={location.id} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
-                    <div className="p-6 border-t-4 border-[#264E8A]">
+                    <div className="p-6">
                       <h2 className="text-xl font-medium mb-2">{location.name}</h2>
                       <div className="flex items-center justify-between mb-4">
                         <span
@@ -129,7 +141,7 @@ export default function DashboardContent({ user }: { user: User }) {
                       </div>
                       {expandedLocations[location.id] && (
                         <div className="space-y-2 mb-4">
-                          {location.spots.map((spot: any) => (
+                          {location.spots.map((spot) => (
                             <div key={spot.id} className="flex items-center space-x-2">
                               <Checkbox
                                 id={spot.id}
@@ -150,7 +162,7 @@ export default function DashboardContent({ user }: { user: User }) {
                       <div className="flex items-center justify-end gap-4 mt-4">
                         <div
                           className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
-                          onClick={() => handleLocationToggle(location.id, false)}
+                          onClick={() => handleLocationDelete(location.id)}
                         >
                           <Trash2 className="h-5 w-5 text-black" />
                         </div>
@@ -173,31 +185,11 @@ export default function DashboardContent({ user }: { user: User }) {
             </TabsContent>
 
             <TabsContent value="scheduled" className="mt-8">
-              <div className="space-y-4">
-                {slots.map((slot) => (
-                  <Card key={slot.id} className="p-6 shadow-md">
-                    <h3 className="text-lg font-medium">
-                      {new Date(slot.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        day: 'numeric',
-                        month: 'long'
-                      })}
-                    </h3>
-                    <p className="text-gray-600 mt-1">
-                      Good surf conditions in {slot.spot} at {slot.location}
-                    </p>
-                  </Card>
-                ))}
-                {slots.length > 0 && (
-                  <p className="text-gray-600 mt-8 border-t pt-4">
-                    All the slots above are scheduled in your Google Calendar.
-                  </p>
-                )}
-              </div>
+              <ScheduledTab />
             </TabsContent>
           </Tabs>
         </div>
       </div>
     </div>
-  )
+  );
 }

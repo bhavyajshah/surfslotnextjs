@@ -12,14 +12,17 @@ export async function GET() {
 
     // Get all locations with their spots
     const locations = await prisma.location.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
         spots: {
           select: {
             id: true,
             name: true,
-            externalId: true
+            active: true
           }
-        }
+        },
+        active: true
       }
     });
 
