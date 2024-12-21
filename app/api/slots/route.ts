@@ -6,58 +6,36 @@ import { authConfig } from '@/lib/auth/config';
 export async function GET() {
   try {
     const session = await getServerSession(authConfig);
-    if (!session?.user) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const activeLocations = await prisma.location.findMany({
-      where: {
-        active: true,
-        spots: {
-          some: {
-            active: true
-          }
-        }
-      },
-      include: {
-        spots: {
-          where: {
-            active: true
-          },
-          select: {
-            id: true,
-            name: true,
-            conditions: true
-          }
-        }
-      }
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
     });
 
-    if (!activeLocations.length) {
-      return NextResponse.json([]);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const currentDate = new Date();
-    const slots = activeLocations.flatMap(location =>
-      location.spots.map(spot => ({
-        id: spot.id,
-        date: currentDate.toISOString(),
-        location: location.name,
-        spot: spot.name,
-        conditions: spot.conditions || {
-          waveHeight: "Good",
-          wind: "Favorable",
-          tide: "Mid",
-          bestTimeToSurf: ["Morning", "Evening"]
+    // Get user's slots
+    const slots = await prisma.userSlot.findMany({
+      where: {
+        userId: user.id,
+        startTime: {
+          gte: new Date() // Only future slots
         }
-      }))
-    );
+      },
+      orderBy: {
+        startTime: 'asc'
+      }
+    });
 
     return NextResponse.json(slots);
   } catch (error) {
     console.error('Error fetching surf slots:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch surf slots' },
       { status: 500 }
     );
   }

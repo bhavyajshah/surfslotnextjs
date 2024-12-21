@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,44 +11,70 @@ datasource db {
 }
 
 model User {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  email                 String   @unique
+  id                    String         @id @default(auto()) @map("_id") @db.ObjectId
+  email                 String         @unique
   name                  String?
-  calendarNotifications Boolean  @default(false)
-  selectedSpots         String[] @default([])
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  profile               Json?          // Stores Google profile data
+  tokens               Json?          // Stores Google OAuth tokens
+  calendarId           String?        // Google Calendar ID
+  enabled              Boolean        @default(true)
+  subscription         Json?          // Stripe subscription data
+  userLocations        UserLocation[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 }
 
 model Location {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  city      String
-  active    Boolean  @default(false)
-  spots     Spot[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  spots         Spot[]
+  userLocations UserLocation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Spot {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  active        Boolean        @default(false)
-  conditions    Json?
-  dailyUpdates  DailyUpdate[]
+  externalId    String        // ID from external surf forecasting service
   location      Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   locationId    String         @db.ObjectId
+  userSpots     UserSpot[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
 
-model DailyUpdate {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  spotId    String   @db.ObjectId
-  spot      Spot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
-  message   String
-  startTime DateTime
-  endTime   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model UserLocation {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String    @db.ObjectId
+  location     Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId   String    @db.ObjectId
+  locationName String    // Denormalized for quick access
+  enabled      Boolean   @default(true)
+  spots        UserSpot[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model UserSpot {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  userLocation    UserLocation @relation(fields: [userLocationId], references: [id], onDelete: Cascade)
+  userLocationId  String       @db.ObjectId
+  spot            Spot         @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  spotId          String       @db.ObjectId
+  enabled         Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model UserSlot {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  spotId      String    @db.ObjectId
+  startTime   DateTime
+  endTime     DateTime
+  conditions  Json      // Store surf conditions
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

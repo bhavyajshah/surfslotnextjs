@@ -3,42 +3,72 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(request: Request) {
+// Get user locations
+export async function GET() {
   try {
     const session = await getServerSession(authConfig);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { locationId, spotIds } = await request.json();
-
-    // Update user's selected spots
-    const user = await prisma.user.upsert({
-      where: { email: session.user.email },
-      update: {
-        selectedSpots: spotIds,
-        calendarNotifications: true
+    const userLocations = await prisma.userLocation.findMany({
+      where: {
+        user: {
+          email: session.user.email
+        }
       },
-      create: {
-        email: session.user.email,
-        name: session.user.name || '',
-        selectedSpots: spotIds,
-        calendarNotifications: true
+      include: {
+        spots: {
+          include: {
+            spot: true
+          }
+        }
       }
     });
 
-    // Activate the location
-    await prisma.location.update({
-      where: { id: locationId },
-      data: { active: true }
+    return NextResponse.json(userLocations);
+  } catch (error) {
+    console.error('Error fetching user locations:', error);
+    return NextResponse.json({ error: 'Failed to fetch user locations' }, { status: 500 });
+  }
+}
+
+// Add new location for user
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { locationId } = await request.json();
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
     });
 
-    return NextResponse.json(user);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Create UserLocation with associated spots
+    const userLocation = await prisma.userLocation.create({
+      data: {
+        userId: user.id,
+        locationId,
+        enabled: true,
+        spots: {
+          create: [] // Spots will be enabled individually later
+        }
+      },
+      include: {
+        spots: true
+      }
+    });
+
+    return NextResponse.json(userLocation);
   } catch (error) {
-    console.error('Error updating user locations:', error);
-    return NextResponse.json(
-      { error: 'Failed to update locations' },
-      { status: 500 }
-    );
+    console.error('Error adding location:', error);
+    return NextResponse.json({ error: 'Failed to add location' }, { status: 500 });
   }
 }
