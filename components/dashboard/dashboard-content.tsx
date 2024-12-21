@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from "react";
+import { useEffect, useState } from 'react';
 import { User } from 'next-auth';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -15,9 +15,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLocations } from "@/hooks/use-locations";
-import { signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { LocationSearch } from "./location-search";
 import { ScheduledTab } from "./tabs/scheduled-tab";
+import { CalendarAccessNotification } from './notifications/calendar-access';
+import { SubscriptionNotification } from './notifications/subscription';
+import { SettingsTab } from './tabs/settings-tab';
+import Image from 'next/image';
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
@@ -28,7 +32,7 @@ function UserNav({ user }: { user: User }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="h-8 w-8 cursor-pointer">
-          <AvatarImage src={user.image || ''} alt={user.name || ''} />
+          <Image src={user.image || ''} width={50} height={10} alt={user.name || ''} />
           <AvatarFallback>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -42,8 +46,20 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const { locations, updateLocation, toggleSpot, deleteLocation } = useLocations();
-  const [expandedLocations, setExpandedLocations] = React.useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = React.useState("locations");
+  const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState("locations");
+  const [hasCalendarAccess, setHasCalendarAccess] = useState(true)
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
+  const { data: session } = useSession()
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      const scope = (session as any)?.scope || ''
+      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar')
+      setHasCalendarAccess(hasCalendarScope)
+    }
+  }, [session])
+
 
   const toggleLocationExpand = (locationId: string) => {
     setExpandedLocations(prev => ({
@@ -76,38 +92,55 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Please sign in to access the dashboard</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg=[#FAFAFA] flex flex-col">
       <header>
-        <div className="container mx-auto px-4 flex justify-between items-center h-16">
+        <div className="container mx-auto px-4 py-4 flex justify-end">
           <UserNav user={user} />
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 flex-1">
-        <h1 className="text-3xl font-medium">my surfslots</h1>
+      <div className="container mx-auto px-4 flex-1">
+        <h1 className="text-[32px] font-normal mb-8 text-[#111827]">my surfslots</h1>
         <div className="border-b mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start space-x-8 h-auto bg-transparent p-0">
+            <TabsList className="w-full justify-start space-x-8 h-auto bg-transparent p-0 border-b-2">
               <TabsTrigger
                 value="locations"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0 pb-4"
+                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0"
               >
                 locations
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0 pb-4"
+                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0 "
               >
                 surf settings
               </TabsTrigger>
               <TabsTrigger
                 value="scheduled"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0 pb-4"
+                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0"
               >
                 scheduled surfslots
               </TabsTrigger>
             </TabsList>
+
+            <div className="mt-8">
+              {!hasCalendarAccess && (
+                <CalendarAccessNotification onRequestAccess={handleCalendarAccess} />
+              )}
+              {!hasActiveSubscription && (
+                <SubscriptionNotification onActivate={handleSubscriptionActivate} />
+              )}
+            </div>
 
             <TabsContent value="locations">
               <div className="flex items-center mt-8 justify-between mb-8">
@@ -121,6 +154,7 @@ export default function DashboardContent({ user }: { user: User }) {
                 <LocationSearch />
               </div>
 
+              {/* Location Card */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {locations.filter(loc => loc.active).map((location) => (
                   <Card key={location.id} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
@@ -179,9 +213,7 @@ export default function DashboardContent({ user }: { user: User }) {
             </TabsContent>
 
             <TabsContent value="settings" className="mt-8">
-              <div className="text-center text-gray-600 py-12">
-                It is still not possible to edit settings for your surf slots like preferred conditions, skill level, tides, availability or favourite periods to surf but we are working on new cool stuff. Your input and help is welcome!
-              </div>
+              <SettingsTab />
             </TabsContent>
 
             <TabsContent value="scheduled" className="mt-8">
@@ -192,4 +224,23 @@ export default function DashboardContent({ user }: { user: User }) {
       </div>
     </div>
   );
+  async function handleCalendarAccess() {
+    try {
+      await signIn('google', {
+        callbackUrl: '/dashboard',
+        scope: 'https://www.googleapis.com/auth/calendar'
+      })
+    } catch (error) {
+      console.error('Failed to request calendar access:', error)
+    }
+  }
+
+  async function handleSubscriptionActivate() {
+    try {
+      setHasActiveSubscription(true)
+    } catch (error) {
+      console.error('Failed to activate subscription:', error)
+    }
+  }
 }
+

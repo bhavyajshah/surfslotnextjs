@@ -20,7 +20,9 @@ export function ScheduledTab() {
   if (!slots || slots.length === 0) {
     return (
       <Alert variant="secondary" className="max-w-3xl mx-auto">
-        <InfoIcon className="h-4 w-4" />
+        <div className="">
+          <InfoIcon className="h-4 w-4" />
+        </div>
         <AlertDescription className="ml-2">
           There are no surfslots available for your selected spots. You will have some time
           to get work done and prepare to when the swell comes in.
@@ -30,7 +32,7 @@ export function ScheduledTab() {
   }
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
       {slots.map(slot => (
         <Card key={slot.id} className="p-6 hover:shadow-md transition-shadow">
           <h3 className="text-xl text-black font-medium">
