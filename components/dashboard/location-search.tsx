@@ -1,38 +1,38 @@
-'use client'
+'use client';
 
-import * as React from "react"
-import { Check, Plus } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Check, Plus } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import {
     Command,
     CommandEmpty,
     CommandGroup,
     CommandInput,
     CommandItem,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
-import { useLocations } from "@/hooks/use-locations"
+} from "@/components/ui/popover";
+import { useLocations } from "@/hooks/use-locations";
 
 export function LocationSearch() {
-    const [open, setOpen] = React.useState(false)
-    const [value, setValue] = React.useState("")
-    const { locations, updateLocation } = useLocations()
+    const [open, setOpen] = React.useState(false);
+    const [value, setValue] = React.useState("");
+    const { locations, updateLocation } = useLocations();
 
-    const availableLocations = locations.filter((loc: { active: any }) => !loc.active)
+    const availableLocations = locations.filter(loc => !loc.active);
 
     const handleLocationSelect = async (locationId: string) => {
         try {
-            await updateLocation(locationId, { active: true })
-            setValue("")
-            setOpen(false)
+            await updateLocation(locationId, { active: true });
+            setValue("");
+            setOpen(false);
         } catch (error) {
-            console.error('Failed to add location:', error)
+            console.error('Failed to add location:', error);
         }
-    }
+    };
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -51,7 +51,7 @@ export function LocationSearch() {
                     <CommandInput placeholder="Search location..." />
                     <CommandEmpty>No location found.</CommandEmpty>
                     <CommandGroup>
-                        {availableLocations.map((location: { id: React.Key | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined }) => (
+                        {availableLocations.map((location) => (
                             <CommandItem
                                 key={location.id}
                                 value={location.id}
@@ -70,5 +70,5 @@ export function LocationSearch() {
                 </Command>
             </PopoverContent>
         </Popover>
-    )
+    );
 }

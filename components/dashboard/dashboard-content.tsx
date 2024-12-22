@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import { User } from 'next-auth';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LocationSearch } from "./location-search";
+import { ScheduledTab } from "./tabs/scheduled-tab";
+import { CalendarAccessNotification } from './notifications/calendar-access';
+import { SubscriptionNotification } from './notifications/subscription';
+import { SettingsTab } from './tabs/settings-tab';
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
@@ -16,12 +20,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLocations } from "@/hooks/use-locations";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { LocationSearch } from "./location-search";
-import { ScheduledTab } from "./tabs/scheduled-tab";
-import { CalendarAccessNotification } from './notifications/calendar-access';
-import { SubscriptionNotification } from './notifications/subscription';
-import { SettingsTab } from './tabs/settings-tab';
-import Image from 'next/image';
+import { Card } from '../ui/card';
+
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
@@ -32,7 +32,7 @@ function UserNav({ user }: { user: User }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="h-8 w-8 cursor-pointer">
-          <Image src={user.image || ''} width={50} height={10} alt={user.name || ''} />
+          <AvatarImage src={user.image || ''} alt={user.name || ''} />
           <AvatarFallback>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -44,21 +44,22 @@ function UserNav({ user }: { user: User }) {
   );
 }
 
+
 export default function DashboardContent({ user }: { user: User }) {
+  const [activeTab, setActiveTab] = useState("locations");
   const { locations, updateLocation, toggleSpot, deleteLocation } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState("locations");
-  const [hasCalendarAccess, setHasCalendarAccess] = useState(true)
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
-  const { data: session } = useSession()
+  const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const { data: session } = useSession();
 
   useEffect(() => {
     if (session?.accessToken) {
-      const scope = (session as any)?.scope || ''
-      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar')
-      setHasCalendarAccess(hasCalendarScope)
+      const scope = (session as any)?.scope || '';
+      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
+      setHasCalendarAccess(hasCalendarScope);
     }
-  }, [session])
+  }, [session]);
 
 
   const toggleLocationExpand = (locationId: string) => {
@@ -92,12 +93,13 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   };
 
+
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Please sign in to access the dashboard</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -105,6 +107,10 @@ export default function DashboardContent({ user }: { user: User }) {
       <header>
         <div className="container mx-auto px-4 py-4 flex justify-end">
           <UserNav user={user} />
+          {/* <Avatar className="h-8 w-8 cursor-pointer" onClick={() => signOut()}>
+            <AvatarImage src={user.image || ''} alt={user.name || ''} />
+            <AvatarFallback>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar> */}
         </div>
       </header>
 
@@ -121,7 +127,7 @@ export default function DashboardContent({ user }: { user: User }) {
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0 "
+                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0"
               >
                 surf settings
               </TabsTrigger>
@@ -153,7 +159,6 @@ export default function DashboardContent({ user }: { user: User }) {
                 </div>
                 <LocationSearch />
               </div>
-
               {/* Location Card */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {locations.filter(loc => loc.active).map((location) => (
@@ -224,23 +229,20 @@ export default function DashboardContent({ user }: { user: User }) {
       </div>
     </div>
   );
+
   async function handleCalendarAccess() {
     try {
-      await signIn('google', {
-        callbackUrl: '/dashboard',
-        scope: 'https://www.googleapis.com/auth/calendar'
-      })
+      await signOut();
     } catch (error) {
-      console.error('Failed to request calendar access:', error)
+      console.error('Failed to request calendar access:', error);
     }
   }
 
   async function handleSubscriptionActivate() {
     try {
-      setHasActiveSubscription(true)
+      setHasActiveSubscription(true);
     } catch (error) {
-      console.error('Failed to activate subscription:', error)
+      console.error('Failed to activate subscription:', error);
     }
   }
 }
-
