@@ -26,9 +26,14 @@ export function LocationsTab({ user }: LocationsTabProps) {
     active: boolean;
   }
 
-  const availableLocations: Location[] = locations.filter((loc: Location) => !loc.active);
+  const availableLocations: any = locations.filter((loc: Location) => !loc.active);
 
-  interface ActiveLocation extends Location { }
+  interface ActiveLocation extends Location {
+    locationId: string;
+    locationName: string;
+    enabled: boolean;
+    spots: { id: string; name: string; enabled: boolean; }[];
+  }
 
   const activeLocations: ActiveLocation[] = locations.filter((loc: Location) => loc.active);
 
@@ -79,14 +84,13 @@ export function LocationsTab({ user }: LocationsTabProps) {
       {showLocationSelect && (
         <div className="mb-6">
           {availableLocations.length > 0 ? (
-            <Select
-              options={availableLocations.map(loc => ({
-                label: `${loc.name}, ${loc.city}`,
-                value: loc.id
-              }))}
-              onChange={(value: any) => handleLocationSelect(value)}
-
-            />
+            <select onChange={(e) => handleLocationSelect(e.target.value)}>
+              {availableLocations.map((loc: { name: any; city: any; id: any; }) => (
+                <option key={loc.id} value={loc.id}>
+                  {`${loc.name}, ${loc.city}`}
+                </option>
+              ))}
+            </select>
           ) : (
             <Alert>
               <AlertCircle className="h-4 w-4" />

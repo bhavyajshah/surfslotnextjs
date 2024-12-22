@@ -6,23 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
-interface LocationCardProps {
-  location: {
-    locationId: string;
-    locationName: string;
-    enabled: boolean;
-    spots: Array<{
-      id: string;
-      name: string;
-      enabled: boolean;
-    }>;
-  };
-  onToggle: (locationId: string, enabled: boolean) => void;
-  onRemove: (locationId: string) => void;
-  onToggleSpot: (locationId: string, spotId: string) => void;
-}
-
-export function LocationCard({ location, onToggle, onRemove, onToggleSpot }: LocationCardProps) {
+export function LocationCard({ location, onToggle, onRemove, onToggleSpot }: any) {
   const [isExpanded, setIsExpanded] = React.useState(true);
 
   return (
@@ -44,7 +28,7 @@ export function LocationCard({ location, onToggle, onRemove, onToggleSpot }: Loc
         </div>
         {isExpanded && (
           <div className="space-y-2 mb-4">
-            {location.spots.map((spot) => (
+            {location.spots.map((spot:any) => (
               <div key={spot.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={spot.id}

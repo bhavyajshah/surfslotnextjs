@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
       <Suspense fallback={<div>Loading...</div>}>
-        <DashboardContent user={session.user} />
+        {session && <DashboardContent user={session.user} />}
       </Suspense>
     </ErrorBoundary>
   )

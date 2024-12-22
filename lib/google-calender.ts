@@ -43,7 +43,7 @@ ${event.conditions.bestTimeToSurf ? `\nBest Time to Surf: ${event.conditions.bes
       dateTime: event.endTime.toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
-    colorId: "7", // Aqua color for surf events
+    colorId: "7",
     reminders: {
       useDefault: false,
       overrides: [
@@ -77,3 +77,7 @@ ${event.conditions.bestTimeToSurf ? `\nBest Time to Surf: ${event.conditions.bes
     throw error;
   }
 }
+
+export const createCalendarEvent = async (session: any, event: any) => {
+
+};

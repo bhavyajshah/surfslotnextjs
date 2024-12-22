@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Location, Spot } from '@/hooks/use-locations/types';
+import { Location } from '@/hooks/use-locations/types';
 
 export async function getLocations() {
   try {
