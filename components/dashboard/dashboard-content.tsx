@@ -47,7 +47,7 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { locations, updateLocation, toggleSpot, deleteLocation, userLocations, deleteUserLocation } = useLocations();
+  const { locations, updateLocation, toggleSpot, deleteLocation, userLocations, deleteUserLocation, addUserLocation } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
@@ -69,29 +69,6 @@ export default function DashboardContent({ user }: { user: User }) {
     }));
   };
 
-  const handleSpotToggle = async (locationId: string, spotId: string) => {
-    try {
-      await toggleSpot(locationId, spotId);
-    } catch (error) {
-      console.error('Error toggling spot:', error);
-    }
-  };
-
-  const handleLocationToggle = async (locationId: string, active: boolean) => {
-    try {
-      await updateLocation(locationId, { active });
-    } catch (error) {
-      console.error('Error updating location:', error);
-    }
-  };
-
-  const handleLocationDelete = async (locationId: string) => {
-    try {
-      await deleteLocation(locationId);
-    } catch (error) {
-      console.error('Error deleting location:', error);
-    }
-  };
 
 
   if (!user) {
@@ -153,11 +130,11 @@ export default function DashboardContent({ user }: { user: User }) {
                   </Avatar>
                   <span className="text-lg">{user.name}</span>
                 </div>
-                <LocationSearch />
+                <LocationSearch onSelect={addUserLocation} />
               </div>
               {/* Location Card */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userLocations.map((location) => (
+                {userLocations.map((location:any) => (
                   <Card key={location.locationId} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
                     <div className="p-6">
                       <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>

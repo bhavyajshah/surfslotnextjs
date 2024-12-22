@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 import { isAdmin } from '@/lib/auth/utils/auth-checks';
 
-export function useLocations(): UseLocationsReturn {
+export function useLocations(): any {
   const [locations, setLocations] = useState<Location[]>([]);
   const [userLocations, setUserLocations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);

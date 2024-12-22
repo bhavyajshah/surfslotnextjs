@@ -1,36 +1,39 @@
-'use client';
+'use client'
 
-import * as React from "react";
-import { Check, Plus } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import { Check, Plus } from 'lucide-react'
+import { cn } from "@/lib/utils"
 import {
     Command,
     CommandEmpty,
     CommandGroup,
     CommandInput,
     CommandItem,
-} from "@/components/ui/command";
+} from "@/components/ui/command"
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover";
-import { useLocations } from "@/hooks/use-locations";
+} from "@/components/ui/popover"
+import { useLocations } from "@/hooks/use-locations"
+import { Checkbox } from "../ui/checkbox"
 
-export function LocationSearch() {
-    const [open, setOpen] = React.useState(false);
-    const [value, setValue] = React.useState("");
-    const { locations, userLocations, addUserLocation } = useLocations();
+interface LocationSearchProps {
+    onSelect: (locationId: string) => Promise<void>;
+}
 
-    const availableLocations = locations.filter(loc =>
-        !userLocations.some(userLoc => userLoc.locationId === loc.id)
+
+export function LocationSearch({ onSelect }: LocationSearchProps) {
+    const [open, setOpen] = React.useState(false)
+    const { locations, userLocations } = useLocations();
+
+    const availableLocations = locations.filter((loc: { id: any }) =>
+        !userLocations.some((userLoc: { locationId: any }) => userLoc.locationId === loc.id)
     );
 
     const handleLocationSelect = async (locationId: string) => {
         try {
-            await addUserLocation(locationId);
-            setValue("");
-            setOpen(false);
+            await onSelect(locationId);
         } catch (error) {
             console.error('Failed to add location:', error);
         }
@@ -53,16 +56,15 @@ export function LocationSearch() {
                     <CommandInput placeholder="Search location..." />
                     <CommandEmpty>No location found.</CommandEmpty>
                     <CommandGroup>
-                        {availableLocations.map((location) => (
+                        {availableLocations.map((location: any) => (
                             <CommandItem
                                 key={location.id}
                                 value={location.id}
-                                onSelect={() => handleLocationSelect(location.id)}
+                                onSelect={handleLocationSelect}
                             >
-                                <Check
+                                <Checkbox
                                     className={cn(
                                         "mr-2 h-4 w-4",
-                                        value === location.id ? "opacity-100" : "opacity-0"
                                     )}
                                 />
                                 {location.name}
@@ -72,5 +74,5 @@ export function LocationSearch() {
                 </Command>
             </PopoverContent>
         </Popover>
-    );
+    )
 }

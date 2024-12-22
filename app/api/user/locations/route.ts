@@ -3,6 +3,29 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma';
 
+export async function GET() {
+  try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userLocations = await prisma.userLocation.findMany({
+      where: {
+        userId: session.user.id
+      },
+      include: {
+        spots: true
+      }
+    });
+
+    return NextResponse.json(userLocations);
+  } catch (error) {
+    console.error('Error fetching user locations:', error);
+    return NextResponse.json({ error: 'Failed to fetch user locations' }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authConfig);
@@ -22,10 +45,13 @@ export async function POST(request: Request) {
         spots: {
           create: spots.map((spot: any) => ({
             name: spot.name,
-            id: spot.id,
+            spotId: spot.id,
             enabled: false
           }))
         }
+      },
+      include: {
+        spots: true
       }
     });
 
@@ -33,25 +59,5 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating user location:', error);
     return NextResponse.json({ error: 'Failed to create user location' }, { status: 500 });
-  }
-}
-
-export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userLocations = await prisma.userLocation.findMany({
-      where: {
-        userId: session.user.id
-      }
-    });
-
-    return NextResponse.json(userLocations);
-  } catch (error) {
-    console.error('Error fetching user locations:', error);
-    return NextResponse.json({ error: 'Failed to fetch user locations' }, { status: 500 });
   }
 }
