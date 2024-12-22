@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth/config';
-import { locations } from '@/lib/data/location';
+import { prisma } from '@/lib/prisma';
 
 export async function PATCH(
   request: Request,
@@ -13,20 +13,38 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { active } = await request.json();
-    const location = locations.find(loc => loc._id === params.locationId);
-    const spot = location?.spots.find(s => s.id === params.spotId);
+    const { enabled } = await request.json();
 
-    if (!location || !spot) {
+    const userLocation = await prisma.userLocation.findFirst({
+      where: {
+        locationId: params.locationId,
+        userId: session.user.id,
+      },
+      include: {
+        spots: true,
+      },
+    });
+
+    if (!userLocation) {
+      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+    }
+
+    const spot = userLocation.spots.find(s => s.spotId === params.spotId);
+    if (!spot) {
       return NextResponse.json({ error: 'Spot not found' }, { status: 404 });
     }
 
-    // Return the updated spot
-    return NextResponse.json({
-      id: spot.id,
-      name: spot.name,
-      active
+    await prisma.userSpot.update({
+      where: { id: spot.id },
+      data: { enabled },
     });
+
+    const updatedLocation = await prisma.userLocation.findUnique({
+      where: { id: userLocation.id },
+      include: { spots: true },
+    });
+
+    return NextResponse.json(updatedLocation);
   } catch (error) {
     console.error('Error updating spot:', error);
     return NextResponse.json({ error: 'Failed to update spot' }, { status: 500 });

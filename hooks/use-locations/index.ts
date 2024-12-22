@@ -8,6 +8,7 @@ import { isAdmin } from '@/lib/auth/utils/auth-checks';
 
 export function useLocations(): UseLocationsReturn {
   const [locations, setLocations] = useState<Location[]>([]);
+  const [userLocations, setUserLocations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
@@ -15,6 +16,7 @@ export function useLocations(): UseLocationsReturn {
 
   useEffect(() => {
     loadLocations();
+    loadUserLocations();
   }, []);
 
   const loadLocations = async () => {
@@ -40,27 +42,47 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
-  const addLocation = async (data: Partial<Location>) => {
+  const loadUserLocations = async () => {
     try {
-      const response = await fetch('/api/locations', {
+      const response = await fetch('/api/user/locations');
+      if (!response.ok) {
+        throw new Error('Failed to fetch user locations');
+      }
+      const data = await response.json();
+      setUserLocations(data);
+    } catch (error) {
+      console.error('Error loading user locations:', error);
+    }
+  };
+
+  const addUserLocation = async (locationId: string) => {
+    try {
+      const location = locations.find(loc => loc.id === locationId);
+      if (!location) throw new Error('Location not found');
+
+      const response = await fetch('/api/user/locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          locationId: location.id,
+          locationName: location.name,
+          spots: location.spots
+        })
       });
 
       if (!response.ok) {
         throw new Error('Failed to add location');
       }
 
-      const newLocation = await response.json();
-      setLocations(prev => [...prev, newLocation]);
+      const newUserLocation = await response.json();
+      setUserLocations(prev => [...prev, newUserLocation]);
 
       toast({
         title: 'Success',
         description: 'Location added successfully'
       });
 
-      return newLocation;
+      return newUserLocation;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to add location';
       toast({
@@ -72,73 +94,29 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
-  const updateLocation = async (id: string, data: Partial<Location>) => {
-    try {
-      const response = await fetch(`/api/locations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update location');
-      }
-
-      const updatedLocation = await response.json();
-      setLocations(prev =>
-        prev.map(loc => loc.id === id ? updatedLocation : loc)
-      );
-
-      toast({
-        title: 'Success',
-        description: 'Location updated successfully'
-      });
-
-      return updatedLocation;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update location';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
-      });
-      throw error;
-    }
-  };
-
   const toggleSpot = async (locationId: string, spotId: string) => {
     try {
-      const location = locations.find(loc => loc.id === locationId);
-      if (!location) throw new Error('Location not found');
+      const userLocation = userLocations.find(loc => loc.locationId === locationId);
+      if (!userLocation) throw new Error('User location not found');
 
-      const spot = location.spots.find(s => s.id === spotId);
-      if (!spot) throw new Error('Spot not found');
-
-      const response = await fetch(`/api/locations/${locationId}/spots/${spotId}`, {
+      const response = await fetch(`/api/user/locations/${locationId}/spots/${spotId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: !spot.active })
+        body: JSON.stringify({ enabled: !userLocation.spots.find((s: any) => s.id === spotId).enabled })
       });
 
       if (!response.ok) {
         throw new Error('Failed to toggle spot');
       }
 
-      const updatedSpot = await response.json();
-      setLocations(prev =>
+      const updatedLocation = await response.json();
+      setUserLocations(prev =>
         prev.map(loc =>
-          loc.id === locationId
-            ? {
-                ...loc,
-                spots: loc.spots.map(s =>
-                  s.id === spotId ? { ...s, active: !s.active } : s
-                )
-              }
-            : loc
+          loc.locationId === locationId ? updatedLocation : loc
         )
       );
 
-      return updatedSpot;
+      return updatedLocation;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to toggle spot';
       toast({
@@ -150,9 +128,9 @@ export function useLocations(): UseLocationsReturn {
     }
   };
 
-  const deleteLocation = async (id: string) => {
+  const deleteUserLocation = async (locationId: string) => {
     try {
-      const response = await fetch(`/api/locations/${id}`, {
+      const response = await fetch(`/api/user/locations/${locationId}`, {
         method: 'DELETE'
       });
 
@@ -160,7 +138,7 @@ export function useLocations(): UseLocationsReturn {
         throw new Error('Failed to delete location');
       }
 
-      setLocations(prev => prev.filter(loc => loc.id !== id));
+      setUserLocations(prev => prev.filter(loc => loc.locationId !== locationId));
       toast({
         title: 'Success',
         description: 'Location removed successfully'
@@ -178,11 +156,11 @@ export function useLocations(): UseLocationsReturn {
 
   return {
     locations,
+    userLocations,
     isLoading,
     error,
-    addLocation,
-    updateLocation,
-    deleteLocation,
+    addUserLocation,
+    deleteUserLocation,
     toggleSpot,
     refresh: loadLocations,
     isAdmin: isAdmin(session?.user?.email)

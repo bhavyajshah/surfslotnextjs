@@ -47,7 +47,7 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { locations, updateLocation, toggleSpot, deleteLocation } = useLocations();
+  const { locations, updateLocation, toggleSpot, deleteLocation, userLocations, deleteUserLocation } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
@@ -107,10 +107,6 @@ export default function DashboardContent({ user }: { user: User }) {
       <header>
         <div className="container mx-auto px-4 py-4 flex justify-end">
           <UserNav user={user} />
-          {/* <Avatar className="h-8 w-8 cursor-pointer" onClick={() => signOut()}>
-            <AvatarImage src={user.image || ''} alt={user.name || ''} />
-            <AvatarFallback>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar> */}
         </div>
       </header>
 
@@ -161,31 +157,31 @@ export default function DashboardContent({ user }: { user: User }) {
               </div>
               {/* Location Card */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {locations.filter(loc => loc.active).map((location) => (
-                  <Card key={location.id} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+                {userLocations.map((location) => (
+                  <Card key={location.locationId} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
                     <div className="p-6">
-                      <h2 className="text-xl font-medium mb-2">{location.name}</h2>
+                      <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
                       <div className="flex items-center justify-between mb-4">
                         <span
                           className="text-sm text-blue-600 cursor-pointer"
-                          onClick={() => toggleLocationExpand(location.id)}
+                          onClick={() => toggleLocationExpand(location.locationId)}
                         >
-                          {expandedLocations[location.id] ? 'Hide' : 'View'} surf spots in {location.name}
-                          {expandedLocations[location.id] ? (
+                          {expandedLocations[location.locationId] ? 'Hide' : 'View'} surf spots in {location.locationName}
+                          {expandedLocations[location.locationId] ? (
                             <ChevronUp className="inline ml-1" />
                           ) : (
                             <ChevronDown className="inline ml-1" />
                           )}
                         </span>
                       </div>
-                      {expandedLocations[location.id] && (
+                      {expandedLocations[location.locationId] && (
                         <div className="space-y-2 mb-4">
-                          {location.spots.map((spot) => (
+                          {location.spots.map((spot: any) => (
                             <div key={spot.id} className="flex items-center space-x-2">
                               <Checkbox
                                 id={spot.id}
-                                checked={spot.active}
-                                onCheckedChange={() => handleSpotToggle(location.id, spot.id)}
+                                checked={spot.enabled}
+                                onCheckedChange={() => toggleSpot(location.locationId, spot.id)}
                                 className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                               />
                               <label
@@ -201,13 +197,13 @@ export default function DashboardContent({ user }: { user: User }) {
                       <div className="flex items-center justify-end gap-4 mt-4">
                         <div
                           className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
-                          onClick={() => handleLocationDelete(location.id)}
+                          onClick={() => deleteUserLocation(location.locationId)}
                         >
                           <Trash2 className="h-5 w-5 text-black" />
                         </div>
                         <Switch
-                          checked={location.active}
-                          onCheckedChange={(checked) => handleLocationToggle(location.id, checked)}
+                          checked={location.enabled}
+                          onCheckedChange={(checked) => toggleSpot(location.locationId, checked)}
                           className="bg-[#ADE2DF]"
                         />
                       </div>

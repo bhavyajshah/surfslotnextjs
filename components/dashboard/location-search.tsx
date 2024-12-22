@@ -20,13 +20,15 @@ import { useLocations } from "@/hooks/use-locations";
 export function LocationSearch() {
     const [open, setOpen] = React.useState(false);
     const [value, setValue] = React.useState("");
-    const { locations, updateLocation } = useLocations();
+    const { locations, userLocations, addUserLocation } = useLocations();
 
-    const availableLocations = locations.filter(loc => !loc.active);
+    const availableLocations = locations.filter(loc =>
+        !userLocations.some(userLoc => userLoc.locationId === loc.id)
+    );
 
     const handleLocationSelect = async (locationId: string) => {
         try {
-            await updateLocation(locationId, { active: true });
+            await addUserLocation(locationId);
             setValue("");
             setOpen(false);
         } catch (error) {
@@ -55,7 +57,7 @@ export function LocationSearch() {
                             <CommandItem
                                 key={location.id}
                                 value={location.id}
-                                onSelect={handleLocationSelect}
+                                onSelect={() => handleLocationSelect(location.id)}
                             >
                                 <Check
                                     className={cn(
