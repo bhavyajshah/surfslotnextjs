@@ -1,6 +1,4 @@
 'use client';
-
-import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { GoogleAuthButton } from '@/components/auth/google-auth-button';
 
