@@ -134,7 +134,7 @@ model UserSpot {
   spot           Spot         @relation(fields: [spotId], references: [id], onDelete: Cascade)
 
   @@unique([userLocationId, spotId])
-  @@map("surfslot.userSpots")
+  @@map("userSpots")
 }
 
 // Surf session and scheduling models
@@ -152,7 +152,7 @@ model UserSlot {
   // Relations
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("surfslot.userSlots")
+  @@map("userSlots")
 }
 
 // User preferences model

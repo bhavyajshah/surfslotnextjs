@@ -20,8 +20,9 @@ export async function GET() {
       console.error(`User not found for email: ${session.user.email}`);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
+console.log('Found slots:', user.slots);
     return NextResponse.json(user.slots);
+
   } catch (error) {
     console.error('Error fetching slots:', error);
     return NextResponse.json(

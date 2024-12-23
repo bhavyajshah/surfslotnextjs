@@ -9,67 +9,103 @@ export const authConfig: NextAuthOptions = {
   providers,
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === "google" && profile) {
-        try {
-          // Update or create user with Google profile data
-          await prisma.user.upsert({
+      try {
+        if (!account || !profile) return false;
+
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+          include: { accounts: true }
+        });
+
+        if (existingUser) {
+          // Update existing user
+          await prisma.user.update({
             where: { email: user.email! },
-            update: {
+            data: {
               name: user.name,
               image: user.image,
-              profile: profile,
-              tokens: {
-                access_token: account.access_token,
-                refresh_token: account.refresh_token,
-                scope: account.scope,
-                token_type: account.token_type,
-                id_token: account.id_token,
-                expiry_date: account.expires_at
-              },
               updatedAt: new Date()
-            },
-            create: {
+            }
+          });
+
+          // Update or create account
+          if (existingUser.accounts.length === 0) {
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: account.session_state
+              }
+            });
+          }
+        } else {
+          // Create new user with account
+          await prisma.user.create({
+            data: {
               email: user.email!,
               name: user.name,
               image: user.image,
-              profile: profile,
-              tokens: {
-                access_token: account.access_token,
-                refresh_token: account.refresh_token,
-                scope: account.scope,
-                token_type: account.token_type,
-                id_token: account.id_token,
-                expiry_date: account.expires_at
+              profile: JSON.parse(JSON.stringify(profile)),
+              accounts: {
+                create: {
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  refresh_token: account.refresh_token,
+                  access_token: account.access_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state
+                }
               }
             }
           });
-          return true;
-        } catch (error) {
-          console.error("Error saving user data:", error);
-          return false;
         }
+
+        return true;
+      } catch (error) {
+        console.error("Error in signIn callback:", error);
+        return false;
       }
-      return true;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        session.accessToken = token.accessToken as string;
-      }
-      return session;
-    },
-    async jwt({ token, account }) {
+    async jwt({ token, account, profile, user }) {
       if (account) {
         token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.scope = account.scope;
+        token.userId = user.id;
       }
       return token;
     },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.userId as string;
+        session.accessToken = token.accessToken as string;
+        (session as any).scope = token.scope;
+      }
+      return session;
+    },
     async redirect({ url, baseUrl }) {
-      if (url.includes('/auth/signin') || url === baseUrl || url === '/') {
+      // Always redirect to dashboard after successful sign in
+      if (url.includes('/auth/signin')) {
         return `${baseUrl}/dashboard`;
       }
-      return url.startsWith(baseUrl) ? url : baseUrl;
-    },
+      // Handle other redirects
+      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      return `${baseUrl}/dashboard`;
+    }
   },
   pages: {
     signIn: ROUTES.AUTH.SIGNIN,
@@ -79,5 +115,5 @@ export const authConfig: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === "development"
 };

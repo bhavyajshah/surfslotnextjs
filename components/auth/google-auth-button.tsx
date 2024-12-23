@@ -15,15 +15,19 @@ export function GoogleAuthButton({ callbackUrl = '/dashboard' }: GoogleAuthButto
   const handleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signIn('google', {
+      const result = await signIn('google', {
         callbackUrl,
+        redirect: true,
+        prompt: 'consent',
+        access_type: 'offline',
         scope: [
           'openid',
           'email',
           'profile',
           'https://www.googleapis.com/auth/calendar',
           'https://www.googleapis.com/auth/calendar.events',
-          'https://www.googleapis.com/auth/calendar.readonly'
+          'https://www.googleapis.com/auth/calendar.readonly',
+          'https://www.googleapis.com/auth/calendar.calendarlist.readonly'
         ].join(' ')
       });
     } catch (error) {
