@@ -1,22 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Location, UseLocationsReturn } from './types';
+import { Location } from './types';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
-import { isAdmin } from '@/lib/auth/utils/auth-checks';
 
 export function useLocations(): any {
   const [locations, setLocations] = useState<Location[]>([]);
   const [userLocations, setUserLocations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { data: session } = useSession();
   const { toast } = useToast();
 
+  // Only load locations initially
   useEffect(() => {
     loadLocations();
-    loadUserLocations();
   }, []);
 
   const loadLocations = async () => {
@@ -52,6 +50,11 @@ export function useLocations(): any {
       setUserLocations(data);
     } catch (error) {
       console.error('Error loading user locations:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch user locations',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -85,6 +88,32 @@ export function useLocations(): any {
       return newUserLocation;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to add location';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
+  const deleteUserLocation = async (locationId: string) => {
+    try {
+      const response = await fetch(`/api/user/locations/${locationId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete location');
+      }
+
+      setUserLocations(prev => prev.filter(loc => loc.locationId !== locationId));
+      toast({
+        title: 'Success',
+        description: 'Location removed successfully'
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete location';
       toast({
         title: 'Error',
         description: message,
@@ -128,32 +157,6 @@ export function useLocations(): any {
     }
   };
 
-  const deleteUserLocation = async (locationId: string) => {
-    try {
-      const response = await fetch(`/api/user/locations/${locationId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete location');
-      }
-
-      setUserLocations(prev => prev.filter(loc => loc.locationId !== locationId));
-      toast({
-        title: 'Success',
-        description: 'Location removed successfully'
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete location';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
-      });
-      throw error;
-    }
-  };
-
   return {
     locations,
     userLocations,
@@ -162,7 +165,7 @@ export function useLocations(): any {
     addUserLocation,
     deleteUserLocation,
     toggleSpot,
+    loadUserLocations,
     refresh: loadLocations,
-    isAdmin: isAdmin(session?.user?.email)
   };
 }

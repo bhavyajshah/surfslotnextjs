@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,12 +12,35 @@ model LocationWithSpots {
   name  String
   spots Spot[]
 
-  @@map("locationsWithSpots")
+  @@map("surfslot.locationsWithSpots")
 }
 
 type Spot {
   name String
   id   String
+}
+
+model UserLocation {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String     @db.ObjectId
+  locationId   String
+  locationName String
+  enabled      Boolean    @default(true)
+  spots        UserSpot[]
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("surfslot.userLocations")
+}
+
+model UserSpot {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  userLocationId String       @db.ObjectId
+  spotId         String
+  name           String
+  enabled        Boolean      @default(true)
+  userLocation   UserLocation @relation(fields: [userLocationId], references: [id], onDelete: Cascade)
+
+  @@map("surfslot.userSpots")
 }
 
 model UserSlot {
@@ -30,19 +50,23 @@ model UserSlot {
   start       DateTime
   end         DateTime
   userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("userSlots")
+  @@map("surfslot.userSlots")
 }
 
-// Keep existing User, Account, Session models...
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  email         String    @unique
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  email         String        @unique
   name          String?
   image         String?
   emailVerified DateTime?
   accounts      Account[]
   sessions      Session[]
+  locations     UserLocation[]
+  slots         UserSlot[]
+
+  @@map("surfslot.users")
 }
 
 model Account {
@@ -61,6 +85,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("surfslot.accounts")
 }
 
 model Session {
@@ -69,4 +94,6 @@ model Session {
   userId       String   @db.ObjectId
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("surfslot.sessions")
 }

@@ -23,10 +23,13 @@ export interface UseLocationsReturn {
   locations: Location[];
   isLoading: boolean;
   error: string | null;
-  addLocation: (data: Partial<Location>) => Promise<Location>;
   updateLocation: (id: string, data: Partial<Location>) => Promise<Location>;
   deleteLocation: (id: string) => Promise<void>;
   toggleSpot: (locationId: string, spotId: string) => Promise<Location>;
   refresh: () => Promise<void>;
-  isAdmin: boolean;
+  // isAdmin: boolean;
+  userLocations: any;
+  addUserLocation:any;
+  deleteUserLocation: any;
+  loadUserLocations:any;
 }

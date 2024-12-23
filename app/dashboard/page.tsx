@@ -4,7 +4,7 @@ import { authConfig } from "@/lib/auth/config"
 import { Suspense } from "react"
 import DashboardContent from "@/components/dashboard/dashboard-content"
 import { ErrorBoundary } from "react-error-boundary"
-import { isAdmin, isAuthenticated } from "@/lib/auth/utils/auth-checks"
+import { isAuthenticated } from "@/lib/auth/utils/auth-checks"
 import { ROUTES } from "@/lib/constants"
 
 export default async function DashboardPage() {
@@ -14,9 +14,6 @@ export default async function DashboardPage() {
     redirect(ROUTES.AUTH.SIGNIN)
   }
 
-  if (isAdmin(session?.user?.email)) {
-    redirect(ROUTES.ADMIN)
-  }
 
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>

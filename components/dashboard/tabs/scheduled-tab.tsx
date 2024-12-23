@@ -16,6 +16,7 @@ interface SurfSlot {
 export function ScheduledTab() {
   const [slots, setSlots] = useState<SurfSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSlots();
@@ -23,12 +24,17 @@ export function ScheduledTab() {
 
   const fetchSlots = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch('/api/slots');
-      if (!response.ok) throw new Error('Failed to fetch slots');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setSlots(data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching slots:', error);
+      setError('Failed to fetch slots. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -36,6 +42,15 @@ export function ScheduledTab() {
 
   if (isLoading) {
     return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <InfoIcon className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
   }
 
   if (!slots || slots.length === 0) {
@@ -75,3 +90,4 @@ export function ScheduledTab() {
     </div>
   );
 }
+

@@ -1,4 +1,3 @@
-export const ADMIN_EMAIL = 'websitemaker923@gmail.com'
 
 export const AUTH_CONFIG = {
   GOOGLE_SCOPES: [

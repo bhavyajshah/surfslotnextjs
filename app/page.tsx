@@ -1,12 +1,17 @@
-import SurfslotLanding from '@/components/surfslot-landing'
-import React from 'react'
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth/config';
+import SurfslotLanding from '@/components/surfslot-landing';
 
-const page = () => {
+export default async function HomePage() {
+  const session = await getServerSession(authConfig);
+  if (session) {
+    redirect('/dashboard');
+  }
+
   return (
     <div>
       <SurfslotLanding />
     </div>
-  )
+  );
 }
-
-export default page
