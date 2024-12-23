@@ -1,3 +1,4 @@
+// Database configuration
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,66 +8,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model LocationWithSpots {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  name  String
-  spots Spot[]
-
-  @@map("surfslot.locationsWithSpots")
-}
-
-type Spot {
-  name String
-  id   String
-}
-
-model UserLocation {
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String     @db.ObjectId
-  locationId   String
-  locationName String
-  enabled      Boolean    @default(true)
-  spots        UserSpot[]
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("surfslot.userLocations")
-}
-
-model UserSpot {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  userLocationId String       @db.ObjectId
-  spotId         String
-  name           String
-  enabled        Boolean      @default(true)
-  userLocation   UserLocation @relation(fields: [userLocationId], references: [id], onDelete: Cascade)
-
-  @@map("surfslot.userSpots")
-}
-
-model UserSlot {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  summary     String
-  description String
-  start       DateTime
-  end         DateTime
-  userId      String   @db.ObjectId
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("surfslot.userSlots")
-}
-
+// Authentication and User models
 model User {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   email         String        @unique
   name          String?
   image         String?
   emailVerified DateTime?
+  profile       Json?         // Stores Google profile data
+  tokens        Json?         // Stores OAuth tokens
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // User preferences
+  calendarNotifications Boolean @default(true)
+  skillLevel           String?  // beginner, intermediate, advanced
+  preferredTide        String?  // low, mid, high
+
+  // Relations
   accounts      Account[]
   sessions      Session[]
   locations     UserLocation[]
   slots         UserSlot[]
+  preferences   UserPreference?
 
-  @@map("surfslot.users")
+  @@map("users")
 }
 
 model Account {
@@ -82,6 +48,8 @@ model Account {
   scope             String?
   id_token          String? @db.String
   session_state     String?
+
+  // Relations
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
@@ -93,7 +61,116 @@ model Session {
   sessionToken String   @unique
   userId       String   @db.ObjectId
   expires      DateTime
+
+  // Relations
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("surfslot.sessions")
+}
+
+// Location and Spot models
+model Location {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  city        String
+  country     String
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  spots       Spot[]
+  userLocations UserLocation[]
+
+  @@map("surfslot.locations")
+}
+
+model Spot {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  locationId  String   @db.ObjectId
+  latitude    Float
+  longitude   Float
+  difficulty  String   // beginner, intermediate, advanced
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  userSpots   UserSpot[]
+
+  @@map("surfslot.spots")
+}
+
+// User-specific location and spot models
+model UserLocation {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String     @db.ObjectId
+  locationId   String     @db.ObjectId
+  enabled      Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location     Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  spots        UserSpot[]
+
+  @@unique([userId, locationId])
+  @@map("surfslot.userLocations")
+}
+
+model UserSpot {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  userLocationId String       @db.ObjectId
+  spotId         String       @db.ObjectId
+  enabled        Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  userLocation   UserLocation @relation(fields: [userLocationId], references: [id], onDelete: Cascade)
+  spot           Spot         @relation(fields: [spotId], references: [id], onDelete: Cascade)
+
+  @@unique([userLocationId, spotId])
+  @@map("surfslot.userSpots")
+}
+
+// Surf session and scheduling models
+model UserSlot {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  spotId      String   @db.ObjectId
+  start       DateTime
+  end         DateTime
+  conditions  Json     // Store wave height, wind, tide, etc.
+  status      String   // scheduled, completed, cancelled
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("surfslot.userSlots")
+}
+
+// User preferences model
+model UserPreference {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId @unique
+  minWaveHeight     Float?
+  maxWaveHeight     Float?
+  preferredWindDir  String[]
+  preferredSwellDir String[]
+  availableDays     String[] // Monday, Tuesday, etc.
+  availableTimeStart String? // HH:mm format
+  availableTimeEnd   String? // HH:mm format
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("surfslot.userPreferences")
 }
