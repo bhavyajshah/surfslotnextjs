@@ -13,11 +13,25 @@ export function useLocations() {
   const { data: session } = useSession();
   const { toast } = useToast();
 
-
-  // Only load locations initially
+  // Load user locations on mount
   useEffect(() => {
-    loadLocations();
-  }, []);
+    if (session?.user?.id) {
+      loadUserLocations();
+    }
+  }, [session?.user?.id]);
+
+  const loadUserLocations = async () => {
+    try {
+      const response = await fetch('/api/locations/user');
+      if (!response.ok) {
+        throw new Error('Failed to fetch user locations');
+      }
+      const data = await response.json();
+      setUserLocations(data);
+    } catch (error) {
+      console.error('Error loading user locations:', error);
+    }
+  };
 
   const loadLocations = async () => {
     try {
@@ -42,9 +56,13 @@ export function useLocations() {
     }
   };
 
-
   const addUserLocation = async (locationId: string) => {
     try {
+      // Load locations if they haven't been loaded yet
+      if (locations.length === 0) {
+        await loadLocations();
+      }
+
       const location = locations.find(loc => loc._id.$oid === locationId);
       if (!location) throw new Error('Location not found');
 
@@ -87,9 +105,9 @@ export function useLocations() {
     }
   };
 
-const deleteUserLocation = async (locationId: string) => {
+  const deleteUserLocation = async (locationId: string) => {
     try {
-      const response = await fetch(`/api/user/locations/${locationId}`, {
+      const response = await fetch(`/api/locations/user/${locationId}`, {
         method: 'DELETE'
       });
 
@@ -113,40 +131,6 @@ const deleteUserLocation = async (locationId: string) => {
     }
   };
 
-  const toggleSpot = async (locationId: string, spotId: string) => {
-    try {
-      const userLocation = userLocations.find(loc => loc.locationId === locationId);
-      if (!userLocation) throw new Error('User location not found');
-
-      const response = await fetch(`/api/user/locations/${locationId}/spots/${spotId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: !userLocation.spots.find((s: any) => s.id === spotId).enabled })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to toggle spot');
-      }
-
-      const updatedLocation = await response.json();
-      setUserLocations(prev =>
-        prev.map(loc =>
-          loc.locationId === locationId ? updatedLocation : loc
-        )
-      );
-
-      return updatedLocation;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to toggle spot';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
-      });
-      throw error;
-    }
-  };
-
   return {
     locations,
     userLocations,
@@ -154,8 +138,9 @@ const deleteUserLocation = async (locationId: string) => {
     error,
     addUserLocation,
     deleteUserLocation,
-    toggleSpot,
+    // toggleSpot,
     loadLocations,
+    loadUserLocations,
     refresh: loadLocations,
   };
 }

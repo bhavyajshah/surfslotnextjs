@@ -60,18 +60,21 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
             <PopoverContent className="w-[200px] p-0">
                 <Command>
                     <CommandInput placeholder="Search location..." />
-                    <CommandEmpty>No location found.</CommandEmpty>
                     <CommandGroup>
                         {isLoading ? (
                             <div className="flex items-center justify-center py-6">
                                 <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                        ) : availableLocations.length === 0 ? (
+                            <div className="text-center py-6 text-sm text-gray-500">
+                                No available locations
                             </div>
                         ) : (
                             availableLocations.map((location: any) => (
                                 <CommandItem
                                     key={location._id.$oid}
                                     value={location._id.$oid}
-                                    onSelect={handleLocationSelect}
+                                    onSelect={() => handleLocationSelect(location._id.$oid)}
                                 >
                                     {location.name}
                                 </CommandItem>

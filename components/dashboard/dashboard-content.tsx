@@ -19,9 +19,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import { useLocations } from "@/hooks/use-locations";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Card } from '../ui/card';
-
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
@@ -44,14 +43,18 @@ function UserNav({ user }: { user: User }) {
   );
 }
 
-
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { locations, toggleSpot, userLocations, deleteUserLocation, addUserLocation, isLoading } = useLocations();
+  const { locations, userLocations, isLoading, deleteUserLocation, addUserLocation, loadLocations } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const { data: session } = useSession();
+
+  // Load locations when component mounts
+  useEffect(() => {
+    loadLocations();
+  }, []);
 
   useEffect(() => {
     if (session?.accessToken) {
@@ -61,15 +64,12 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   }, [session]);
 
-
   const toggleLocationExpand = (locationId: string) => {
     setExpandedLocations(prev => ({
       ...prev,
       [locationId]: !prev[locationId]
     }));
   };
-
-
 
   if (!user) {
     return (
@@ -133,8 +133,7 @@ export default function DashboardContent({ user }: { user: User }) {
                 <LocationSearch onSelect={addUserLocation} />
               </div>
 
-
-          {isLoading ? (
+              {isLoading ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader className="h-8 w-8 animate-spin text-gray-500" />
                 </div>
@@ -153,7 +152,7 @@ export default function DashboardContent({ user }: { user: User }) {
                             className="text-sm text-blue-600 cursor-pointer"
                             onClick={() => toggleLocationExpand(location.locationId)}
                           >
-                            {expandedLocations[location.locationId] ? 'View' : 'Hide'} surf spots in {location.locationName}
+                            {expandedLocations[location.locationId] ? 'Hide' : 'View'} surf spots in {location.locationName}
                             {expandedLocations[location.locationId] ? (
                               <ChevronUp className="inline ml-1" />
                             ) : (
@@ -168,7 +167,7 @@ export default function DashboardContent({ user }: { user: User }) {
                                 <Checkbox
                                   id={spot.id}
                                   checked={spot.enabled}
-                                  onCheckedChange={() => toggleSpot(location.locationId, spot.id)}
+
                                   className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                                 />
                                 <label
@@ -190,7 +189,6 @@ export default function DashboardContent({ user }: { user: User }) {
                           </div>
                           <Switch
                             checked={location.enabled}
-                            onCheckedChange={() => toggleSpot(location.locationId, location.locationId)}
                             className="bg-[#ADE2DF]"
                           />
                         </div>
