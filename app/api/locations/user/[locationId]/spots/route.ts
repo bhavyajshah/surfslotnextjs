@@ -17,6 +17,7 @@ export async function PUT(
 
     const { spots } = await request.json();
 
+    console.log(params.locationId, spots);
     const userLocation = await prisma.userLocation.update({
       where: {
         userId_locationId: {

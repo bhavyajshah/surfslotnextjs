@@ -1,18 +1,18 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth/config'
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth/config';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export async function DELETE(
   request: Request,
   { params }: { params: { locationId: string } }
 ) {
   try {
-    const session = await getServerSession(authConfig)
+    const session = await getServerSession(authConfig);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await prisma.userLocation.delete({
@@ -22,14 +22,14 @@ export async function DELETE(
           locationId: params.locationId
         }
       }
-    })
+    });
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting user location:', error)
+    console.error('Error deleting user location:', error);
     return NextResponse.json(
       { error: 'Failed to delete user location' },
       { status: 500 }
-    )
+    );
   }
 }

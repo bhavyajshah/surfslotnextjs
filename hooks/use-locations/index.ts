@@ -14,7 +14,6 @@ export function useLocations() {
   const { data: session } = useSession();
   const { toast } = useToast();
 
-  // Load user locations only once when component mounts and session is available
   useEffect(() => {
     if (session?.user?.id) {
       loadUserLocations();
@@ -49,6 +48,7 @@ export function useLocations() {
       }
       const data = await response.json();
       setLocations(data);
+      return data; // Return the loaded locations
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch locations';
       setError(message);
@@ -57,6 +57,7 @@ export function useLocations() {
         description: message,
         variant: 'destructive'
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -77,18 +78,18 @@ export function useLocations() {
         return null;
       }
 
-      // Load locations if they haven't been loaded yet
-      if (locations.length === 0) {
-        await loadLocations();
-      }
+      // Load fresh locations data
+      const currentLocations = await loadLocations();
 
-      const location = locations.find(loc => loc._id.$oid === locationId);
-      if (!location) throw new Error('Location not found');
+      const location = currentLocations.find((loc: any) => loc._id.$oid === locationId);
+      if (!location) {
+        throw new Error('Location not found');
+      }
 
       const payload = {
         locationId: location._id.$oid,
         locationName: location.name,
-        spots: location.spots.map(spot => ({
+        spots: location.spots.map((spot: any) => ({
           ...spot,
           enabled: true
         }))
@@ -126,7 +127,7 @@ export function useLocations() {
     }
   };
 
-  const updateLocationSpots = async (locationId: string, spots: any[]) => {
+ const updateLocationSpots = async (locationId: string, spots: any[]) => {
     try {
       const response = await fetch(`/api/locations/user/${locationId}/spots`, {
         method: 'PUT',
@@ -139,9 +140,11 @@ export function useLocations() {
       }
 
       const updatedLocation = await response.json();
+
+      // Update local state
       setUserLocations(prev =>
         prev.map(loc =>
-          loc.locationId === locationId ? updatedLocation : loc
+          loc.locationId === locationId ? { ...loc, spots } : loc
         )
       );
 
@@ -149,6 +152,8 @@ export function useLocations() {
         title: 'Success',
         description: 'Spots updated successfully'
       });
+
+      return updatedLocation;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update spots';
       toast({
@@ -156,6 +161,7 @@ export function useLocations() {
         description: message,
         variant: 'destructive'
       });
+      throw error;
     }
   };
 
@@ -169,7 +175,9 @@ export function useLocations() {
         throw new Error('Failed to delete location');
       }
 
+      // Update local state
       setUserLocations(prev => prev.filter(loc => loc.locationId !== locationId));
+
       toast({
         title: 'Success',
         description: 'Location removed successfully'
