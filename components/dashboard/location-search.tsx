@@ -15,7 +15,6 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { useLocations } from "@/hooks/use-locations"
-import { Checkbox } from "../ui/checkbox"
 
 interface LocationSearchProps {
     onSelect: (locationId: string) => Promise<void>;

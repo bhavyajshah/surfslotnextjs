@@ -153,7 +153,7 @@ export default function DashboardContent({ user }: { user: User }) {
                             className="text-sm text-blue-600 cursor-pointer"
                             onClick={() => toggleLocationExpand(location.locationId)}
                           >
-                            {expandedLocations[location.locationId] ? 'Hide' : 'View'} surf spots in {location.locationName}
+                            {expandedLocations[location.locationId] ? 'View' : 'Hide'} surf spots in {location.locationName}
                             {expandedLocations[location.locationId] ? (
                               <ChevronUp className="inline ml-1" />
                             ) : (

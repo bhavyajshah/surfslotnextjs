@@ -20,10 +20,10 @@ export async function POST(request: Request) {
         userId: session.user.id,
         locationId,
         locationName,
-        enabled: false,
+        enabled: true,
         spots: spots.map((spot: any) => ({
           ...spot,
-          enabled: true
+          enabled: false
         }))
       }
     })
