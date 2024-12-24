@@ -1,33 +1,28 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth/config';
+import { NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
-    const session = await getServerSession(authConfig);
+    const locations = await prisma.locationWithSpots.findMany({
+      include: {
+        userLocations: {
+          select: {
+            enabled: true,
+            spots: true,
+            userId: true
+          }
+        }
+      }
+    })
 
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { locations: true }
-    });
-
-    if (!user) {
-      console.error(`User not found for email: ${session.user.email}`);
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(user.locations);
+    return NextResponse.json(locations)
   } catch (error) {
-    console.error('Error fetching locations:', error);
+    console.error('Error fetching locations:', error)
     return NextResponse.json(
       { error: 'Failed to fetch locations' },
       { status: 500 }
-    );
+    )
   }
 }
-

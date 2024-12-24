@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -11,34 +12,45 @@ interface SurfSlot {
   description: string;
   start: string;
   end: string;
+  userId: string;
 }
 
 export function ScheduledTab() {
   const [slots, setSlots] = useState<SurfSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    fetchSlots();
-  }, []);
-
-  const fetchSlots = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/slots');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchSlots = async (userId: string) => {
+      try {
+        setIsLoading(true);
+        console.log('Fetching slots for userId:', userId);
+        const response = await fetch(`/api/slots?userId=${userId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('Fetched slots:', data);
+        setSlots(data);
+        setError(null);
+      } catch (error) {
+        console.error('Error fetching slots:', error);
+        setError('Failed to fetch slots. Please try again later.');
+      } finally {
+        setIsLoading(false);
       }
-      const data = await response.json();
-      setSlots(data);
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching slots:', error);
-      setError('Failed to fetch slots. Please try again later.');
-    } finally {
+    };
+
+    // Only fetch if we have a valid session and userId
+    if (status === 'authenticated' && session?.user?.id) {
+      console.log('Session:', session);
+      fetchSlots(session.user.id);
+    } else if (status === 'unauthenticated') {
       setIsLoading(false);
+      setError('User not authenticated');
     }
-  };
+  }, [session?.user?.id, status]); // Only depend on userId and status
 
   if (isLoading) {
     return <div className="text-center py-8">Loading...</div>;
@@ -59,7 +71,7 @@ export function ScheduledTab() {
         <InfoIcon className="h-4 w-4" />
         <AlertDescription className="ml-2">
           There are no surfslots available for your selected spots. You will have some time
-          to get work done and prepare to when the swell comes in.
+          to get work done and prepare for when the swell comes in.
         </AlertDescription>
       </Alert>
     );
@@ -90,4 +102,3 @@ export function ScheduledTab() {
     </div>
   );
 }
-
