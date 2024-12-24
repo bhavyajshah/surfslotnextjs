@@ -9,11 +9,12 @@ export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [userLocations, setUserLocations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
   const { toast } = useToast();
 
-  // Load user locations on mount
+  // Load user locations only once when component mounts and session is available
   useEffect(() => {
     if (session?.user?.id) {
       loadUserLocations();
@@ -30,6 +31,11 @@ export function useLocations() {
       setUserLocations(data);
     } catch (error) {
       console.error('Error loading user locations:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load your locations',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -58,6 +64,19 @@ export function useLocations() {
 
   const addUserLocation = async (locationId: string) => {
     try {
+      setIsAddingLocation(true);
+
+      // Check if location is already added
+      const existingLocation = userLocations.find(loc => loc.locationId === locationId);
+      if (existingLocation) {
+        toast({
+          title: 'Location exists',
+          description: 'You have already added this location',
+          variant: 'destructive'
+        });
+        return null;
+      }
+
       // Load locations if they haven't been loaded yet
       if (locations.length === 0) {
         await loadLocations();
@@ -102,6 +121,41 @@ export function useLocations() {
         variant: 'destructive'
       });
       throw error;
+    } finally {
+      setIsAddingLocation(false);
+    }
+  };
+
+  const updateLocationSpots = async (locationId: string, spots: any[]) => {
+    try {
+      const response = await fetch(`/api/locations/user/${locationId}/spots`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spots })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update spots');
+      }
+
+      const updatedLocation = await response.json();
+      setUserLocations(prev =>
+        prev.map(loc =>
+          loc.locationId === locationId ? updatedLocation : loc
+        )
+      );
+
+      toast({
+        title: 'Success',
+        description: 'Spots updated successfully'
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update spots';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -135,10 +189,11 @@ export function useLocations() {
     locations,
     userLocations,
     isLoading,
+    isAddingLocation,
     error,
     addUserLocation,
     deleteUserLocation,
-    // toggleSpot,
+    updateLocationSpots,
     loadLocations,
     loadUserLocations,
     refresh: loadLocations,

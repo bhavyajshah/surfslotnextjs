@@ -45,16 +45,29 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { locations, userLocations, isLoading, deleteUserLocation, addUserLocation, loadLocations } = useLocations();
+  const { userLocations, isLoading, deleteUserLocation, addUserLocation, loadLocations } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const { data: session } = useSession();
 
-  // Load locations when component mounts
-  useEffect(() => {
-    loadLocations();
-  }, []);
+  // Update the handleSpotToggle function in DashboardContent
+  const handleSpotToggle = async (locationId: string, spotId: string, checked: boolean) => {
+    const location = userLocations.find(loc => loc.locationId === locationId);
+    if (!location) return;
+
+    const updatedSpots = location.spots.map((spot: any) =>
+      spot.id === spotId ? { ...spot, enabled: checked } : spot
+    );
+
+    try {
+      // await updateLocationSpots(locationId, updatedSpots);
+    } catch (error) {
+      console.error('Error updating spots:', error);
+    }
+  };
+
+
 
   useEffect(() => {
     if (session?.accessToken) {
@@ -167,7 +180,7 @@ export default function DashboardContent({ user }: { user: User }) {
                                 <Checkbox
                                   id={spot.id}
                                   checked={spot.enabled}
-
+                                  onCheckedChange={(checked) => handleSpotToggle(location.locationId, spot.id, checked as boolean)}
                                   className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                                 />
                                 <label

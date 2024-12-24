@@ -4,7 +4,6 @@ import * as React from "react"
 import { Plus, Loader2 } from 'lucide-react'
 import {
     Command,
-    CommandEmpty,
     CommandGroup,
     CommandInput,
     CommandItem,
@@ -22,7 +21,7 @@ interface LocationSearchProps {
 
 export function LocationSearch({ onSelect }: LocationSearchProps) {
     const [open, setOpen] = React.useState(false)
-    const { locations, userLocations, loadLocations, isLoading } = useLocations();
+    const { locations, userLocations, loadLocations, isLoading, isAddingLocation } = useLocations();
 
     // Only load locations when opening the popover
     const handleOpenChange = (newOpen: boolean) => {
@@ -53,8 +52,12 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                     role="combobox"
                     aria-expanded={open}
                 >
-                    <Plus className="h-4 w-4" />
-                    <span>Add new location</span>
+                    {isAddingLocation ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Plus className="h-4 w-4" />
+                    )}
+                    <span>{isAddingLocation ? 'Adding location...' : 'Add new location'}</span>
                 </div>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0">
@@ -75,6 +78,7 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                                     key={location._id.$oid}
                                     value={location._id.$oid}
                                     onSelect={() => handleLocationSelect(location._id.$oid)}
+                                    disabled={isAddingLocation}
                                 >
                                     {location.name}
                                 </CommandItem>
