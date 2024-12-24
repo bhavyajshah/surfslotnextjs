@@ -12,19 +12,17 @@ export async function GET() {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: session.user.id },
       select: {
         id: true,
         email: true,
-        name: true,
-        image: true,
         profile: true,
-        locations: {
-          include: {
-            spots: true
-          }
-        },
-        slots: true
+        // locations: {
+        //   include: {
+        //     spots: true
+        //   }
+        // },
+        // slots: true
       }
     });
 
@@ -53,7 +51,7 @@ export async function POST(request: Request) {
     const data = await request.json();
 
     const user = await prisma.user.update({
-      where: { email: session.user.email },
+      where: { id: session.user.id },
       data: {
         ...data,
         updatedAt: new Date()

@@ -5,12 +5,14 @@ import { Location } from './types';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 
-export function useLocations(): any {
+export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [userLocations, setUserLocations] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
   const { toast } = useToast();
+
 
   // Only load locations initially
   useEffect(() => {
@@ -40,37 +42,25 @@ export function useLocations(): any {
     }
   };
 
-  const loadUserLocations = async () => {
-    try {
-      const response = await fetch('/api/user/locations');
-      if (!response.ok) {
-        throw new Error('Failed to fetch user locations');
-      }
-      const data = await response.json();
-      setUserLocations(data);
-    } catch (error) {
-      console.error('Error loading user locations:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch user locations',
-        variant: 'destructive'
-      });
-    }
-  };
 
   const addUserLocation = async (locationId: string) => {
     try {
-      const location = locations.find(loc => loc.id === locationId);
+      const location = locations.find(loc => loc._id.$oid === locationId);
       if (!location) throw new Error('Location not found');
 
-      const response = await fetch('/api/user/locations', {
+      const payload = {
+        locationId: location._id.$oid,
+        locationName: location.name,
+        spots: location.spots.map(spot => ({
+          ...spot,
+          enabled: true
+        }))
+      };
+
+      const response = await fetch('/api/locations/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          locationId: location.id,
-          locationName: location.name,
-          spots: location.spots
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -97,7 +87,7 @@ export function useLocations(): any {
     }
   };
 
-  const deleteUserLocation = async (locationId: string) => {
+const deleteUserLocation = async (locationId: string) => {
     try {
       const response = await fetch(`/api/user/locations/${locationId}`, {
         method: 'DELETE'
@@ -165,7 +155,7 @@ export function useLocations(): any {
     addUserLocation,
     deleteUserLocation,
     toggleSpot,
-    loadUserLocations,
+    loadLocations,
     refresh: loadLocations,
   };
 }

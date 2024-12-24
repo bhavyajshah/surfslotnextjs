@@ -1,8 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { Check, Plus } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { Plus, Loader2 } from 'lucide-react'
 import {
     Command,
     CommandEmpty,
@@ -22,25 +21,33 @@ interface LocationSearchProps {
     onSelect: (locationId: string) => Promise<void>;
 }
 
-
 export function LocationSearch({ onSelect }: LocationSearchProps) {
     const [open, setOpen] = React.useState(false)
-    const { locations, userLocations } = useLocations();
+    const { locations, userLocations, loadLocations, isLoading } = useLocations();
 
-    const availableLocations = locations.filter((loc: { id: any }) =>
-        !userLocations.some((userLoc: { locationId: any }) => userLoc.locationId === loc.id)
+    // Only load locations when opening the popover
+    const handleOpenChange = (newOpen: boolean) => {
+        if (newOpen) {
+            loadLocations();
+        }
+        setOpen(newOpen);
+    };
+
+    const availableLocations = locations.filter((loc: any) =>
+        !userLocations.some((userLoc: { locationId: string }) => userLoc.locationId === loc._id.$oid)
     );
 
     const handleLocationSelect = async (locationId: string) => {
         try {
             await onSelect(locationId);
+            setOpen(false);
         } catch (error) {
             console.error('Failed to add location:', error);
         }
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={handleOpenChange}>
             <PopoverTrigger asChild>
                 <div
                     className="flex items-center gap-2 bg-[#ADE2DF] hover:bg-[#ADE2DF] text-black px-3 py-2 rounded-full cursor-pointer"
@@ -56,20 +63,21 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                     <CommandInput placeholder="Search location..." />
                     <CommandEmpty>No location found.</CommandEmpty>
                     <CommandGroup>
-                        {availableLocations.map((location: any) => (
-                            <CommandItem
-                                key={location.id}
-                                value={location.id}
-                                onSelect={handleLocationSelect}
-                            >
-                                <Checkbox
-                                    className={cn(
-                                        "mr-2 h-4 w-4",
-                                    )}
-                                />
-                                {location.name}
-                            </CommandItem>
-                        ))}
+                        {isLoading ? (
+                            <div className="flex items-center justify-center py-6">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                        ) : (
+                            availableLocations.map((location: any) => (
+                                <CommandItem
+                                    key={location._id.$oid}
+                                    value={location._id.$oid}
+                                    onSelect={handleLocationSelect}
+                                >
+                                    {location.name}
+                                </CommandItem>
+                            ))
+                        )}
                     </CommandGroup>
                 </Command>
             </PopoverContent>

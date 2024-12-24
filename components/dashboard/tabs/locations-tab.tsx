@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { LocationCard } from '@/components/dashboard/location-card';
 import { useLocations } from '@/hooks/use-locations';
 import { Alert } from '@/components/ui/alert';
-import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 
 interface LocationsTabProps {
@@ -15,7 +14,7 @@ interface LocationsTabProps {
 }
 
 export function LocationsTab({ user }: LocationsTabProps) {
-  const { locations, isLoading, updateLocation, toggleSpot } = useLocations();
+  const { locations, isLoading, addUserLocation, toggleSpot } = useLocations();
   const [showLocationSelect, setShowLocationSelect] = useState(false);
   const { toast } = useToast();
 
@@ -28,21 +27,14 @@ export function LocationsTab({ user }: LocationsTabProps) {
 
   const availableLocations: any = locations.filter((loc: Location) => !loc.active);
 
-  interface ActiveLocation extends Location {
-    locationId: string;
-    locationName: string;
-    enabled: boolean;
-    spots: { id: string; name: string; enabled: boolean; }[];
-  }
-
-  const activeLocations: ActiveLocation[] = locations.filter((loc: Location) => loc.active);
+  const activeLocations: any = locations.filter((loc: Location) => loc.active);
 
   const handleLocationSelect = async (locationId: string) => {
     try {
       const location = locations.find((loc: { id: string; }) => loc.id === locationId);
       if (!location) return;
 
-      await updateLocation(locationId, { active: true });
+      await addUserLocation(locationId);
       toast({
         title: 'Success',
         description: `${location.name} has been added to your locations`
@@ -101,7 +93,7 @@ export function LocationsTab({ user }: LocationsTabProps) {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activeLocations.map(location => (
+        {activeLocations.map((location: { id: string; }) => (
           <LocationCard
             key={location.id}
             location={location}

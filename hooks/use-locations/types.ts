@@ -11,6 +11,7 @@ export interface Spot {
 }
 
 export interface Location {
+  _id: any;
   id: string;
   name: string;
   city: string;

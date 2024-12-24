@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import { useLocations } from "@/hooks/use-locations";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Card } from '../ui/card';
@@ -47,7 +47,7 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { locations, updateLocation, toggleSpot, deleteLocation, userLocations, deleteUserLocation, addUserLocation } = useLocations();
+  const { locations, toggleSpot, userLocations, deleteUserLocation, addUserLocation, isLoading } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
@@ -132,62 +132,73 @@ export default function DashboardContent({ user }: { user: User }) {
                 </div>
                 <LocationSearch onSelect={addUserLocation} />
               </div>
-              {/* Location Card */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userLocations.map((location:any) => (
-                  <Card key={location.locationId} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
-                    <div className="p-6">
-                      <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
-                      <div className="flex items-center justify-between mb-4">
-                        <span
-                          className="text-sm text-blue-600 cursor-pointer"
-                          onClick={() => toggleLocationExpand(location.locationId)}
-                        >
-                          {expandedLocations[location.locationId] ? 'Hide' : 'View'} surf spots in {location.locationName}
-                          {expandedLocations[location.locationId] ? (
-                            <ChevronUp className="inline ml-1" />
-                          ) : (
-                            <ChevronDown className="inline ml-1" />
-                          )}
-                        </span>
-                      </div>
-                      {expandedLocations[location.locationId] && (
-                        <div className="space-y-2 mb-4">
-                          {location.spots.map((spot: any) => (
-                            <div key={spot.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={spot.id}
-                                checked={spot.enabled}
-                                onCheckedChange={() => toggleSpot(location.locationId, spot.id)}
-                                className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
-                              />
-                              <label
-                                htmlFor={spot.id}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {spot.name}
-                              </label>
-                            </div>
-                          ))}
+
+
+          {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader className="h-8 w-8 animate-spin text-gray-500" />
+                </div>
+              ) : userLocations.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No locations added yet. Click "Add new location" to get started.</p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {userLocations.map((location: any) => (
+                    <Card key={location._id.$oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+                      <div className="p-6">
+                        <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
+                        <div className="flex items-center justify-between mb-4">
+                          <span
+                            className="text-sm text-blue-600 cursor-pointer"
+                            onClick={() => toggleLocationExpand(location.locationId)}
+                          >
+                            {expandedLocations[location.locationId] ? 'Hide' : 'View'} surf spots in {location.locationName}
+                            {expandedLocations[location.locationId] ? (
+                              <ChevronUp className="inline ml-1" />
+                            ) : (
+                              <ChevronDown className="inline ml-1" />
+                            )}
+                          </span>
                         </div>
-                      )}
-                      <div className="flex items-center justify-end gap-4 mt-4">
-                        <div
-                          className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
-                          onClick={() => deleteUserLocation(location.locationId)}
-                        >
-                          <Trash2 className="h-5 w-5 text-black" />
+                        {expandedLocations[location.locationId] && (
+                          <div className="space-y-2 mb-4">
+                            {location.spots.map((spot: any) => (
+                              <div key={spot.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={spot.id}
+                                  checked={spot.enabled}
+                                  onCheckedChange={() => toggleSpot(location.locationId, spot.id)}
+                                  className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                                />
+                                <label
+                                  htmlFor={spot.id}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  {spot.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-end gap-4 mt-4">
+                          <div
+                            className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
+                            onClick={() => deleteUserLocation(location.locationId)}
+                          >
+                            <Trash2 className="h-5 w-5 text-black" />
+                          </div>
+                          <Switch
+                            checked={location.enabled}
+                            onCheckedChange={() => toggleSpot(location.locationId, location.locationId)}
+                            className="bg-[#ADE2DF]"
+                          />
                         </div>
-                        <Switch
-                          checked={location.enabled}
-                          onCheckedChange={(checked) => toggleSpot(location.locationId, checked)}
-                          className="bg-[#ADE2DF]"
-                        />
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="settings" className="mt-8">
