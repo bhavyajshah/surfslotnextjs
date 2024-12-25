@@ -48,7 +48,7 @@ export function useLocations() {
       }
       const data = await response.json();
       setLocations(data);
-      return data; // Return the loaded locations
+      return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch locations';
       setError(message);
@@ -67,7 +67,6 @@ export function useLocations() {
     try {
       setIsAddingLocation(true);
 
-      // Check if location is already added
       const existingLocation = userLocations.find(loc => loc.locationId === locationId);
       if (existingLocation) {
         toast({
@@ -78,9 +77,7 @@ export function useLocations() {
         return null;
       }
 
-      // Load fresh locations data
       const currentLocations = await loadLocations();
-
       const location = currentLocations.find((loc: any) => loc._id.oid === locationId);
       if (!location) {
         throw new Error('Location not found');
@@ -127,8 +124,10 @@ export function useLocations() {
     }
   };
 
- const updateLocationSpots = async (locationId: string, spots: any[]) => {
+  const updateLocationSpots = async (locationId: string, spots: any[]) => {
     try {
+      console.log('Sending update request for location:', locationId); // Debug log
+
       const response = await fetch(`/api/locations/user/${locationId}/spots`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -136,15 +135,16 @@ export function useLocations() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update spots');
+        const errorData = await response.json();
+        console.error('Server error:', errorData); // Debug log
+        throw new Error(errorData.error || 'Failed to update spots');
       }
 
       const updatedLocation = await response.json();
 
-      // Update local state
       setUserLocations(prev =>
         prev.map(loc =>
-          loc.locationId === locationId ? { ...loc, spots } : loc
+          loc._id.oid === locationId ? { ...loc, spots } : loc
         )
       );
 
@@ -165,6 +165,43 @@ export function useLocations() {
     }
   };
 
+  const updateLocationEnabled = async (locationId: string, enabled: boolean) => {
+    try {
+      const response = await fetch(`/api/locations/user/${locationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update location');
+      }
+
+      const updatedLocation = await response.json();
+
+      setUserLocations(prev =>
+        prev.map(loc =>
+          loc.locationId === locationId ? { ...loc, enabled } : loc
+        )
+      );
+
+      toast({
+        title: 'Success',
+        description: `Location ${enabled ? 'enabled' : 'disabled'} successfully`
+      });
+
+      return updatedLocation;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update location';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   const deleteUserLocation = async (locationId: string) => {
     try {
       const response = await fetch(`/api/locations/user/${locationId}`, {
@@ -175,7 +212,6 @@ export function useLocations() {
         throw new Error('Failed to delete location');
       }
 
-      // Update local state
       setUserLocations(prev => prev.filter(loc => loc.locationId !== locationId));
 
       toast({
@@ -202,6 +238,7 @@ export function useLocations() {
     addUserLocation,
     deleteUserLocation,
     updateLocationSpots,
+    updateLocationEnabled,
     loadLocations,
     loadUserLocations,
     refresh: loadLocations,

@@ -45,7 +45,7 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { userLocations, isLoading, deleteUserLocation, addUserLocation, updateLocationSpots } = useLocations();
+  const { userLocations, isLoading, deleteUserLocation, addUserLocation, updateLocationSpots, updateLocationEnabled } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
@@ -55,14 +55,24 @@ export default function DashboardContent({ user }: { user: User }) {
     const location = userLocations.find(loc => loc.locationId === locationId);
     if (!location) return;
 
+    console.log('Updating spot:', { locationId, spotId, checked }); // Debug log
+
     const updatedSpots = location.spots.map((spot: any) =>
       spot.id === spotId ? { ...spot, enabled: checked } : spot
     );
 
     try {
-      await updateLocationSpots(locationId, updatedSpots);
+      await updateLocationSpots(location._id.oid, updatedSpots);
     } catch (error) {
       console.error('Error updating spots:', error);
+    }
+  };
+
+  const handleLocationToggle = async (locationId: string, enabled: boolean) => {
+    try {
+      await updateLocationEnabled(locationId, enabled);
+    } catch (error) {
+      console.error('Error updating location enabled status:', error);
     }
   };
 
@@ -173,18 +183,16 @@ export default function DashboardContent({ user }: { user: User }) {
                         {expandedLocations[location.locationId] && (
                           <div className="space-y-2 mb-4">
                             {location.spots.map((spot: any) => (
-                              console.log(location.locationId?.oid),
+                              console.log(location.locationId?.oid, spot.id),
                               <div key={spot.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={spot.id}
-                                  checked={spot.enabled}
-                                  onCheckedChange={(checked) => {
-                                    console.log(`Checkbox for spot ${location.locationId?.oid} ${spot.id} changed. New state:`, checked);
-                                    handleSpotToggle(location.locationId?.oid, spot.id, checked as boolean);
-                                  }}
-                                  className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
-                                />
-
+                                  <Checkbox
+                                    id={spot.id}
+                                    checked={spot.enabled}
+                                    onCheckedChange={(checked) => {
+                                      handleSpotToggle(location._id.oid, spot.id, checked as boolean);
+                                    }}
+                                    className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                                  />
                                 <label
                                   htmlFor={spot.id}
                                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -204,6 +212,7 @@ export default function DashboardContent({ user }: { user: User }) {
                           </div>
                           <Switch
                             checked={location.enabled}
+                            onCheckedChange={(checked) => handleLocationToggle(location.locationId, checked)}
                             className="bg-[#ADE2DF]"
                           />
                         </div>

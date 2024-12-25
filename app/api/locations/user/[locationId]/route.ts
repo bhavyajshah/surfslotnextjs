@@ -5,6 +5,40 @@ import { authConfig } from '@/lib/auth/config';
 
 const prisma = new PrismaClient();
 
+export async function PUT(
+  request: Request,
+  { params }: { params: { locationId: string } }
+) {
+  try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { enabled } = await request.json();
+
+    const userLocation = await prisma.userLocation.update({
+      where: {
+        userId_locationId: {
+          userId: session.user.id,
+          locationId: params.locationId
+        }
+      },
+      data: {
+        enabled
+      }
+    });
+
+    return NextResponse.json(userLocation);
+  } catch (error) {
+    console.error('Error updating location:', error);
+    return NextResponse.json(
+      { error: 'Failed to update location' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: { locationId: string } }
