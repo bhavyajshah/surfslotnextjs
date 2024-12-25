@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         enabled: true,
         spots: spots.map((spot: any) => ({
           ...spot,
-          enabled: true
+          enabled: false
         }))
       }
     })
