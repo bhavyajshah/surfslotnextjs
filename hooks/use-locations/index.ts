@@ -81,13 +81,13 @@ export function useLocations() {
       // Load fresh locations data
       const currentLocations = await loadLocations();
 
-      const location = currentLocations.find((loc: any) => loc._id.$oid === locationId);
+      const location = currentLocations.find((loc: any) => loc._id.oid === locationId);
       if (!location) {
         throw new Error('Location not found');
       }
 
       const payload = {
-        locationId: location._id.$oid,
+        locationId: location._id.oid,
         locationName: location.name,
         spots: location.spots.map((spot: any) => ({
           ...spot,

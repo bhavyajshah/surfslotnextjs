@@ -31,13 +31,13 @@ export async function POST(request: Request) {
     // Transform the response to match the expected format
     const formattedResponse = {
       _id: {
-        $oid: userLocation.id
+        oid: userLocation.id
       },
       userId: {
-        $oid: userLocation.userId
+        oid: userLocation.userId
       },
       locationId: {
-        $oid: userLocation.locationId
+        oid: userLocation.locationId
       },
       locationName: userLocation.locationName,
       enabled: userLocation.enabled,
@@ -70,13 +70,13 @@ export async function GET() {
     // Transform the response to match the expected format
     const formattedLocations = userLocations.map(location => ({
       _id: {
-        $oid: location.id
+        oid: location.id
       },
       userId: {
-        $oid: location.userId
+        oid: location.userId
       },
       locationId: {
-        $oid: location.locationId
+        oid: location.locationId
       },
       locationName: location.locationName,
       enabled: location.enabled,

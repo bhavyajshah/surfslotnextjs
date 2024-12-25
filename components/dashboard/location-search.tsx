@@ -32,7 +32,7 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
     };
 
     const availableLocations = locations.filter((loc: any) =>
-        !userLocations.some((userLoc: { locationId: string }) => userLoc.locationId === loc._id.$oid)
+        !userLocations.some((userLoc: { locationId: string }) => userLoc.locationId === loc._id.oid)
     );
 
     const handleLocationSelect = async (locationId: string) => {
@@ -75,9 +75,9 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                         ) : (
                             availableLocations.map((location: any) => (
                                 <CommandItem
-                                    key={location._id.$oid}
-                                    value={location._id.$oid}
-                                    onSelect={() => handleLocationSelect(location._id.$oid)}
+                                    key={location._id.oid}
+                                    value={location._id.oid}
+                                    onSelect={() => handleLocationSelect(location._id.oid)}
                                     disabled={isAddingLocation}
                                 >
                                     {location.name}

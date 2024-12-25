@@ -154,7 +154,7 @@ export default function DashboardContent({ user }: { user: User }) {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {userLocations.map((location: any) => (
-                    <Card key={location._id.$oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+                    <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
                       <div className="p-6">
                         <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
                         <div className="flex items-center justify-between mb-4">
@@ -173,13 +173,18 @@ export default function DashboardContent({ user }: { user: User }) {
                         {expandedLocations[location.locationId] && (
                           <div className="space-y-2 mb-4">
                             {location.spots.map((spot: any) => (
+                              console.log(location),
                               <div key={spot.id} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={spot.id}
                                   checked={spot.enabled}
-                                  onCheckedChange={(checked) => handleSpotToggle(location.locationId, spot.id, checked as boolean)}
+                                  onCheckedChange={(checked) => {
+                                    console.log(`Checkbox for spot ${location} ${spot.id} changed. New state:`, checked);
+                                    handleSpotToggle(location.locationId?.oid, spot.id, checked as boolean);
+                                  }}
                                   className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                                 />
+
                                 <label
                                   htmlFor={spot.id}
                                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
