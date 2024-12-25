@@ -28,9 +28,9 @@ export interface UseLocationsReturn {
   deleteLocation: (id: string) => Promise<void>;
   toggleSpot: (locationId: string, spotId: string) => Promise<Location>;
   refresh: () => Promise<void>;
-  // isAdmin: boolean;
   userLocations: any;
   addUserLocation:any;
   deleteUserLocation: any;
   loadUserLocations:any;
+  isUpdatingSpot: any;
 }

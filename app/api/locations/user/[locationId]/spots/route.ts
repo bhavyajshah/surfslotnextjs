@@ -17,24 +17,38 @@ export async function PUT(
 
     const { spots } = await request.json();
 
-    console.log(params.locationId, spots);
-    const userLocation = await prisma.userLocation.update({
+    console.log('Updating spots for location:', params.locationId);
+    console.log('User ID:', session.user.id);
+    console.log('Spots data:', JSON.stringify(spots, null, 2));
+
+    const userLocation = await prisma.userLocation.findFirst({
       where: {
-        userId_locationId: {
-          userId: session.user.id,
-          locationId: params.locationId
-        }
+        userId: session.user.id,
+        locationId: params.locationId
       },
-      data: {
-        spots: spots
-      }
     });
 
-    return NextResponse.json(userLocation);
+    if (!userLocation) {
+      console.error('User location not found for:', { userId: session.user.id, locationId: params.locationId });
+      return NextResponse.json({ error: 'User location not found' }, { status: 404 });
+    }
+
+    const updatedUserLocation = await prisma.userLocation.update({
+      where: {
+        id: userLocation.id,
+      },
+      data: {
+        spots: spots,
+      },
+    });
+
+    console.log('Updated user location:', JSON.stringify(updatedUserLocation, null, 2));
+
+    return NextResponse.json(updatedUserLocation);
   } catch (error) {
     console.error('Error updating spots:', error);
     return NextResponse.json(
-      { error: 'Failed to update spots' },
+      { error: 'Failed to update spots', details: error.message },
       { status: 500 }
     );
   }

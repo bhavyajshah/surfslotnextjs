@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Location } from './types';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
@@ -8,24 +8,31 @@ import { useToast } from '@/components/ui/use-toast';
 export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [userLocations, setUserLocations] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddingLocation, setIsAddingLocation] = useState(false);
-  const [isUpdatingSpot, setIsUpdatingSpot] = useState<string | null>(null);
+  const [isUpdatingLocations, setIsUpdatingLocations] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { data: session } = useSession();
   const { toast } = useToast();
 
-  // Use useCallback to memoize the function
+  const isLoadingRef = useRef(false);
+  const initialLoadCompleteRef = useRef(false);
+
   const loadUserLocations = useCallback(async () => {
-    if (!session?.user?.id) return;
+    if (isLoadingRef.current || !session?.user?.id || initialLoadCompleteRef.current) return;
 
     try {
+      isLoadingRef.current = true;
+      setIsLoading(true);
       const response = await fetch('/api/locations/user');
       if (!response.ok) {
         throw new Error('Failed to fetch user locations');
       }
       const data = await response.json();
       setUserLocations(data);
+      initialLoadCompleteRef.current = true;
+      console.log('Loaded user locations:', data);
     } catch (error) {
       console.error('Error loading user locations:', error);
       toast({
@@ -33,18 +40,24 @@ export function useLocations() {
         description: 'Failed to load your locations',
         variant: 'destructive'
       });
+    } finally {
+      setIsLoading(false);
+      isLoadingRef.current = false;
+      setIsInitialized(true);
     }
   }, [session?.user?.id, toast]);
 
-  // Only call loadUserLocations once when session is available
   useEffect(() => {
-    if (session?.user?.id) {
+    if (session?.user?.id && !initialLoadCompleteRef.current) {
       loadUserLocations();
     }
   }, [session?.user?.id, loadUserLocations]);
 
-  const loadLocations = async () => {
+  const loadLocations = useCallback(async () => {
+    if (isLoadingRef.current) return;
+
     try {
+      isLoadingRef.current = true;
       setIsLoading(true);
       setError(null);
       const response = await fetch('/api/locations');
@@ -65,13 +78,15 @@ export function useLocations() {
       throw error;
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
-  };
+  }, [toast]);
 
-  const addUserLocation = async (locationId: string) => {
+  const addUserLocation = useCallback(async (locationId: string) => {
+    if (isAddingLocation) return;
+
     try {
       setIsAddingLocation(true);
-
       const existingLocation = userLocations.find(loc => loc.locationId === locationId);
       if (existingLocation) {
         toast({
@@ -127,14 +142,18 @@ export function useLocations() {
     } finally {
       setIsAddingLocation(false);
     }
-  };
+  }, [userLocations, loadLocations, toast, isAddingLocation]);
 
-  const updateLocationSpots = async (locationId: string, spots: any[]) => {
+  const updateLocationSpots = useCallback(async (locationId: string | { oid: string }, spots: any[]) => {
+    if (isUpdatingLocations) return;
+
     try {
-      setIsUpdatingSpot(locationId);
-      console.log('Sending update request for location:', locationId);
-
-      const response = await fetch(`/api/locations/user/${locationId}/spots`, {
+      setIsUpdatingLocations(true);
+      const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
+      console.log('Updating spots for location:', actualLocationId);
+      console.log('Current userLocations:', userLocations);
+      console.log('Spots data:', JSON.stringify(spots, null, 2));
+      const response = await fetch(`/api/locations/user/${actualLocationId}/spots`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ spots })
@@ -142,15 +161,15 @@ export function useLocations() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Server error:', errorData);
+        console.error('Error response:', errorData);
         throw new Error(errorData.error || 'Failed to update spots');
       }
 
       const updatedLocation = await response.json();
-
+      console.log('Updated location:', updatedLocation);
       setUserLocations(prev =>
         prev.map(loc =>
-          loc._id.oid === locationId ? { ...loc, spots } : loc
+          loc.locationId === actualLocationId ? { ...loc, spots } : loc
         )
       );
 
@@ -161,6 +180,7 @@ export function useLocations() {
 
       return updatedLocation;
     } catch (error) {
+      console.error('Error in updateLocationSpots:', error);
       const message = error instanceof Error ? error.message : 'Failed to update spots';
       toast({
         title: 'Error',
@@ -169,11 +189,11 @@ export function useLocations() {
       });
       throw error;
     } finally {
-      setIsUpdatingSpot(null);
+      setIsUpdatingLocations(false);
     }
-  };
+  }, [toast, isUpdatingLocations, userLocations]);
 
-  const updateLocationEnabled = async (locationId: string, enabled: boolean) => {
+  const updateLocationEnabled = useCallback(async (locationId: string, enabled: boolean) => {
     try {
       const response = await fetch(`/api/locations/user/${locationId}`, {
         method: 'PUT',
@@ -186,7 +206,6 @@ export function useLocations() {
       }
 
       const updatedLocation = await response.json();
-
       setUserLocations(prev =>
         prev.map(loc =>
           loc.locationId === locationId ? { ...loc, enabled } : loc
@@ -208,9 +227,9 @@ export function useLocations() {
       });
       throw error;
     }
-  };
+  }, [toast]);
 
-  const deleteUserLocation = async (locationId: string) => {
+  const deleteUserLocation = useCallback(async (locationId: string) => {
     try {
       const response = await fetch(`/api/locations/user/${locationId}`, {
         method: 'DELETE'
@@ -235,21 +254,27 @@ export function useLocations() {
       });
       throw error;
     }
-  };
+  }, [toast]);
+
+  const refresh = useCallback(() => {
+    initialLoadCompleteRef.current = false;
+    loadUserLocations();
+  }, [loadUserLocations]);
 
   return {
     locations,
     userLocations,
     isLoading,
     isAddingLocation,
-    isUpdatingSpot,
+    isUpdatingLocations,
     error,
+    isInitialized,
     addUserLocation,
     deleteUserLocation,
     updateLocationSpots,
     updateLocationEnabled,
     loadLocations,
     loadUserLocations,
-    refresh: loadLocations,
+    refresh,
   };
 }

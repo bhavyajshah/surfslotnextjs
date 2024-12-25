@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { User } from 'next-auth';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,34 +45,49 @@ function UserNav({ user }: { user: User }) {
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const { userLocations, isLoading, isUpdatingSpot, deleteUserLocation, addUserLocation, updateLocationSpots, updateLocationEnabled } = useLocations();
+  const {
+    userLocations,
+    isLoading,
+    isInitialized,
+    deleteUserLocation,
+    addUserLocation,
+    updateLocationSpots,
+    updateLocationEnabled
+  } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const { data: session } = useSession();
 
-  const handleSpotToggle = async (locationId: string, spotId: string, checked: boolean) => {
-    const location = userLocations.find(loc => loc._id.oid === locationId);
-    if (!location) return;
+  const handleSpotToggle = useCallback(async (locationId: string | { oid: string }, spotId: string, checked: boolean) => {
+    const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
+    const location = userLocations.find(loc => loc._id.oid === actualLocationId || loc.locationId === actualLocationId);
+    if (!location) {
+      console.error('Location not found:', actualLocationId);
+      console.log('Available locations:', userLocations.map(loc => ({ _id: loc._id, locationId: loc.locationId })));
+      return;
+    }
 
     const updatedSpots = location.spots.map((spot: any) =>
       spot.id === spotId ? { ...spot, enabled: checked } : spot
     );
 
     try {
-      await updateLocationSpots(locationId, updatedSpots);
+      console.log('Updating spots for location:', actualLocationId);
+      console.log('Updated spots:', updatedSpots);
+      await updateLocationSpots(actualLocationId, updatedSpots);
     } catch (error) {
       console.error('Error updating spots:', error);
     }
-  };
+  }, [userLocations, updateLocationSpots]);
 
-  const handleLocationToggle = async (locationId: string, enabled: boolean) => {
+  const handleLocationToggle = useCallback(async (locationId: string, enabled: boolean) => {
     try {
       await updateLocationEnabled(locationId, enabled);
     } catch (error) {
       console.error('Error updating location enabled status:', error);
     }
-  };
+  }, [updateLocationEnabled]);
 
   useEffect(() => {
     if (session?.accessToken) {
@@ -82,11 +97,103 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   }, [session]);
 
-  const toggleLocationExpand = (locationId: string) => {
+  const toggleLocationExpand = useCallback((locationId: string) => {
     setExpandedLocations(prev => ({
       ...prev,
       [locationId]: !prev[locationId]
     }));
+  }, []);
+
+  const handleCalendarAccess = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Failed to request calendar access:', error);
+    }
+  }, []);
+
+  const handleSubscriptionActivate = useCallback(async () => {
+    try {
+      setHasActiveSubscription(true);
+    } catch (error) {
+      console.error('Failed to activate subscription:', error);
+    }
+  }, []);
+
+  const renderLocationsContent = () => {
+    if (isLoading || !isInitialized) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader className="h-8 w-8 animate-spin text-gray-500" />
+        </div>
+      );
+    }
+
+    if (userLocations.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No locations added yet. Click "Add new location" to get started.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {userLocations.map((location: any) => (
+          <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+            <div className="p-6">
+              <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
+              <div className="flex items-center justify-between mb-4">
+                <span
+                  className="text-sm text-blue-600 cursor-pointer"
+                  onClick={() => toggleLocationExpand(location._id.oid)}
+                >
+                  {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
+                  {expandedLocations[location._id.oid] ? (
+                    <ChevronUp className="inline ml-1" />
+                  ) : (
+                    <ChevronDown className="inline ml-1" />
+                  )}
+                </span>
+              </div>
+              {expandedLocations[location._id.oid] && (
+                <div className="space-y-2 mb-4">
+                  {location.spots.map((spot: any) => (
+                    <div key={spot.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={spot.id}
+                        checked={spot.enabled}
+                        onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
+                        className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                      />
+                      <label
+                        htmlFor={spot.id}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {spot.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-4 mt-4">
+                <div
+                  className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
+                  onClick={() => deleteUserLocation(location._id.oid)}
+                >
+                  <Trash2 className="h-5 w-5 text-black" />
+                </div>
+                <Switch
+                  checked={location.enabled}
+                  onCheckedChange={(checked) => handleLocationToggle(location._id.oid, checked)}
+                  className="bg-[#ADE2DF]"
+                />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
   };
 
   if (!user) {
@@ -151,81 +258,7 @@ export default function DashboardContent({ user }: { user: User }) {
                 <LocationSearch onSelect={addUserLocation} />
               </div>
 
-              {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader className="h-8 w-8 animate-spin text-gray-500" />
-                </div>
-              ) : userLocations.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No locations added yet. Click "Add new location" to get started.</p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {userLocations.map((location: any) => (
-                    <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
-                      <div className="p-6">
-                        <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
-                        <div className="flex items-center justify-between mb-4">
-                          <span
-                            className="text-sm text-blue-600 cursor-pointer"
-                            onClick={() => toggleLocationExpand(location._id.oid)}
-                          >
-                            {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
-                            {expandedLocations[location._id.oid] ? (
-                              <ChevronUp className="inline ml-1" />
-                            ) : (
-                              <ChevronDown className="inline ml-1" />
-                            )}
-                          </span>
-                        </div>
-                        {expandedLocations[location._id.oid] && (
-                          <div className="space-y-2 mb-4">
-                            {location.spots.map((spot: any) => (
-                              <div key={spot.id} className="flex items-center space-x-2">
-                                <div className="relative">
-                                  <Checkbox
-                                    id={spot.id}
-                                    checked={spot.enabled}
-                                    disabled={isUpdatingSpot === location._id.oid}
-                                    onCheckedChange={(checked) => {
-                                      handleSpotToggle(location._id.oid, spot.id, checked as boolean);
-                                    }}
-                                    className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
-                                  />
-                                  {isUpdatingSpot === location._id.oid && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <Loader className="h-3 w-3 animate-spin text-gray-500" />
-                                    </div>
-                                  )}
-                                </div>
-                                <label
-                                  htmlFor={spot.id}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {spot.name}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-end gap-4 mt-4">
-                          <div
-                            className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
-                            onClick={() => deleteUserLocation(location.locationId)}
-                          >
-                            <Trash2 className="h-5 w-5 text-black" />
-                          </div>
-                          <Switch
-                            checked={location.enabled}
-                            onCheckedChange={(checked) => handleLocationToggle(location.locationId, checked)}
-                            className="bg-[#ADE2DF]"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
+              {renderLocationsContent()}
             </TabsContent>
 
             <TabsContent value="settings" className="mt-8">
@@ -240,20 +273,4 @@ export default function DashboardContent({ user }: { user: User }) {
       </div>
     </div>
   );
-
-  async function handleCalendarAccess() {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Failed to request calendar access:', error);
-    }
-  }
-
-  async function handleSubscriptionActivate() {
-    try {
-      setHasActiveSubscription(true);
-    } catch (error) {
-      console.error('Failed to activate subscription:', error);
-    }
-  }
 }
