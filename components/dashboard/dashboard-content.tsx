@@ -173,13 +173,13 @@ export default function DashboardContent({ user }: { user: User }) {
                         {expandedLocations[location.locationId] && (
                           <div className="space-y-2 mb-4">
                             {location.spots.map((spot: any) => (
-                              console.log(location),
+                              console.log(location.locationId?.oid),
                               <div key={spot.id} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={spot.id}
                                   checked={spot.enabled}
                                   onCheckedChange={(checked) => {
-                                    console.log(`Checkbox for spot ${location} ${spot.id} changed. New state:`, checked);
+                                    console.log(`Checkbox for spot ${location.locationId?.oid} ${spot.id} changed. New state:`, checked);
                                     handleSpotToggle(location.locationId?.oid, spot.id, checked as boolean);
                                   }}
                                   className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
