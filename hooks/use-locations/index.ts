@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Location } from './types';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,17 +10,15 @@ export function useLocations() {
   const [userLocations, setUserLocations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [isUpdatingSpot, setIsUpdatingSpot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      loadUserLocations();
-    }
-  }, [session?.user?.id]);
+  // Use useCallback to memoize the function
+  const loadUserLocations = useCallback(async () => {
+    if (!session?.user?.id) return;
 
-  const loadUserLocations = async () => {
     try {
       const response = await fetch('/api/locations/user');
       if (!response.ok) {
@@ -36,7 +34,14 @@ export function useLocations() {
         variant: 'destructive'
       });
     }
-  };
+  }, [session?.user?.id, toast]);
+
+  // Only call loadUserLocations once when session is available
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadUserLocations();
+    }
+  }, [session?.user?.id, loadUserLocations]);
 
   const loadLocations = async () => {
     try {
@@ -126,7 +131,8 @@ export function useLocations() {
 
   const updateLocationSpots = async (locationId: string, spots: any[]) => {
     try {
-      console.log('Sending update request for location:', locationId); // Debug log
+      setIsUpdatingSpot(locationId);
+      console.log('Sending update request for location:', locationId);
 
       const response = await fetch(`/api/locations/user/${locationId}/spots`, {
         method: 'PUT',
@@ -136,7 +142,7 @@ export function useLocations() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Server error:', errorData); // Debug log
+        console.error('Server error:', errorData);
         throw new Error(errorData.error || 'Failed to update spots');
       }
 
@@ -162,6 +168,8 @@ export function useLocations() {
         variant: 'destructive'
       });
       throw error;
+    } finally {
+      setIsUpdatingSpot(null);
     }
   };
 
@@ -234,6 +242,7 @@ export function useLocations() {
     userLocations,
     isLoading,
     isAddingLocation,
+    isUpdatingSpot,
     error,
     addUserLocation,
     deleteUserLocation,
