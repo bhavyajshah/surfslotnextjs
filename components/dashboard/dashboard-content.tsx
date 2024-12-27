@@ -21,6 +21,7 @@ import { ScheduledTab } from "./tabs/scheduled-tab";
 import { SettingsTab } from './tabs/settings-tab';
 import { CalendarAccessNotification } from './notifications/calendar-access';
 import { SubscriptionNotification } from './notifications/subscription';
+import { useToast } from "@/components/ui/use-toast";
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
@@ -47,18 +48,19 @@ export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
   const {
     userLocations,
-    setUserLocations,
     isLoading,
     isInitialized,
     deleteUserLocation,
     addUserLocation,
     updateLocationSpots,
-    updateLocationEnabled
+    updateLocationEnabled,
+    loadUserLocations
   } = useLocations();
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const { data: session } = useSession();
+  const { toast } = useToast();
 
   const handleSpotToggle = useCallback(async (locationId: string | { oid: string }, spotId: string, checked: boolean) => {
     const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
@@ -71,51 +73,59 @@ export default function DashboardContent({ user }: { user: User }) {
       return;
     }
 
-    // Create a new array of spots with the updated enabled state
     const updatedSpots = location.spots.map((spot: any) =>
       spot.id === spotId ? { ...spot, enabled: checked } : spot
     );
 
     try {
-      // Update the UI immediately for better user experience
-      setUserLocations(prev =>
-        prev.map(loc =>
-          (loc._id.oid === actualLocationId || loc.locationId === actualLocationId)
-            ? { ...loc, spots: updatedSpots }
-            : loc
-        )
-      );
-
-      // Make the API call
       await updateLocationSpots(actualLocationId, updatedSpots);
+      toast({
+        title: 'Success',
+        description: `Spot ${checked ? 'enabled' : 'disabled'} successfully`,
+      });
     } catch (error) {
-      // Revert the UI change if the API call fails
-      setUserLocations(prev =>
-        prev.map(loc =>
-          (loc._id.oid === actualLocationId || loc.locationId === actualLocationId)
-            ? { ...loc, spots: location.spots }
-            : loc
-        )
-      );
+      toast({
+        title: 'Error',
+        description: 'Failed to update spot status',
+        variant: 'destructive',
+      });
       console.error('Error updating spots:', error);
     }
-  }, [userLocations, updateLocationSpots, setUserLocations]);
+  }, [userLocations, updateLocationSpots, toast]);
 
   const handleLocationToggle = useCallback(async (locationId: string, enabled: boolean) => {
     try {
       await updateLocationEnabled(locationId, enabled);
+      toast({
+        title: 'Success',
+        description: `Location ${enabled ? 'enabled' : 'disabled'} successfully`,
+      });
     } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update location status',
+        variant: 'destructive',
+      });
       console.error('Error updating location enabled status:', error);
     }
-  }, [updateLocationEnabled]);
+  }, [updateLocationEnabled, toast]);
 
   const handleDeleteLocation = useCallback(async (locationId: string) => {
     try {
       await deleteUserLocation(locationId);
+      toast({
+        title: 'Success',
+        description: 'Location deleted successfully',
+      });
     } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete location',
+        variant: 'destructive',
+      });
       console.error('Error deleting location:', error);
     }
-  }, [deleteUserLocation]); 
+  }, [deleteUserLocation, toast]);
 
   const toggleLocationExpand = useCallback((locationId: string) => {
     setExpandedLocations(prev => ({
@@ -139,6 +149,22 @@ export default function DashboardContent({ user }: { user: User }) {
       console.error('Failed to activate subscription:', error);
     }
   }, []);
+
+  const handleAddLocation = useCallback(async (locationId: string) => {
+    try {
+      await addUserLocation(locationId);
+      toast({
+        title: 'Success',
+        description: 'Location added successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add location',
+        variant: 'destructive',
+      });
+    }
+  }, [addUserLocation, toast]);
 
   useEffect(() => {
     if (session?.accessToken) {
@@ -290,7 +316,7 @@ export default function DashboardContent({ user }: { user: User }) {
                   </Avatar>
                   <span className="text-lg">{user.name}</span>
                 </div>
-                <LocationSearch onSelect={addUserLocation} />
+                <LocationSearch onSelect={handleAddLocation} />
               </div>
 
               {renderLocationsContent()}
