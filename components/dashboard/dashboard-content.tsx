@@ -22,6 +22,7 @@ import { SettingsTab } from './tabs/settings-tab';
 import { CalendarAccessNotification } from './notifications/calendar-access';
 import { SubscriptionNotification } from './notifications/subscription';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
@@ -31,12 +32,14 @@ function UserNav({ user }: { user: User }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-8 w-8 cursor-pointer">
-          <AvatarImage src={user.image || ''} alt={user.name || ''} />
-          <AvatarFallback>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.image || ''} alt={user.name || ''} />
+            <AvatarFallback>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem>Manage subscription</DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
@@ -61,6 +64,7 @@ export default function DashboardContent({ user }: { user: User }) {
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const { data: session } = useSession();
   const { toast } = useToast();
+  const [loadingLocations, setLoadingLocations] = useState<Record<string, boolean>>({});
 
   const handleSpotToggle = useCallback(async (locationId: string | { oid: string }, spotId: string, checked: boolean) => {
     const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
@@ -72,6 +76,8 @@ export default function DashboardContent({ user }: { user: User }) {
       console.error('Location not found:', actualLocationId);
       return;
     }
+
+    setLoadingLocations(prev => ({ ...prev, [actualLocationId]: true }));
 
     const updatedSpots = location.spots.map((spot: any) =>
       spot.id === spotId ? { ...spot, enabled: checked } : spot
@@ -90,10 +96,13 @@ export default function DashboardContent({ user }: { user: User }) {
         variant: 'destructive',
       });
       console.error('Error updating spots:', error);
+    } finally {
+      setLoadingLocations(prev => ({ ...prev, [actualLocationId]: false }));
     }
   }, [userLocations, updateLocationSpots, toast]);
 
   const handleLocationToggle = useCallback(async (locationId: string, enabled: boolean) => {
+    setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
     try {
       await updateLocationEnabled(locationId, enabled);
       toast({
@@ -107,10 +116,13 @@ export default function DashboardContent({ user }: { user: User }) {
         variant: 'destructive',
       });
       console.error('Error updating location enabled status:', error);
+    } finally {
+      setLoadingLocations(prev => ({ ...prev, [locationId]: false }));
     }
   }, [updateLocationEnabled, toast]);
 
   const handleDeleteLocation = useCallback(async (locationId: string) => {
+    setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
     try {
       await deleteUserLocation(locationId);
       toast({
@@ -124,6 +136,8 @@ export default function DashboardContent({ user }: { user: User }) {
         variant: 'destructive',
       });
       console.error('Error deleting location:', error);
+    } finally {
+      setLoadingLocations(prev => ({ ...prev, [locationId]: false }));
     }
   }, [deleteUserLocation, toast]);
 
@@ -151,6 +165,7 @@ export default function DashboardContent({ user }: { user: User }) {
   }, []);
 
   const handleAddLocation = useCallback(async (locationId: string) => {
+    setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
     try {
       await addUserLocation(locationId);
       toast({
@@ -163,6 +178,8 @@ export default function DashboardContent({ user }: { user: User }) {
         description: 'Failed to add location',
         variant: 'destructive',
       });
+    } finally {
+      setLoadingLocations(prev => ({ ...prev, [locationId]: false }));
     }
   }, [addUserLocation, toast]);
 
@@ -224,6 +241,7 @@ export default function DashboardContent({ user }: { user: User }) {
                         checked={spot.enabled}
                         onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
                         className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                        disabled={loadingLocations[location._id.oid]}
                       />
                       <label
                         htmlFor={`${location._id.oid}-${spot.id}`}
@@ -236,18 +254,25 @@ export default function DashboardContent({ user }: { user: User }) {
                 </div>
               )}
               <div className="flex items-center justify-end gap-4 mt-4">
-                <button
-                  className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleDeleteLocation(location._id.oid)}
+                  disabled={loadingLocations[location._id.oid]}
                   aria-label={`Delete ${location.locationName}`}
                 >
-                  <Trash2 className="h-5 w-5 text-black" />
-                </button>
+                  {loadingLocations[location._id.oid] ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
                 <Switch
                   checked={location.enabled}
                   onCheckedChange={(checked) => handleLocationToggle(location._id.oid, checked)}
                   className="bg-[#ADE2DF]"
                   aria-label={`Toggle ${location.locationName}`}
+                  disabled={loadingLocations[location._id.oid]}
                 />
               </div>
             </div>
