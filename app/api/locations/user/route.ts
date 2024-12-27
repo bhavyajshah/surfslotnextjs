@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       }
     })
 
-    // Transform the response to match the expected format
     const formattedResponse = {
       _id: {
         oid: userLocation.id
@@ -67,7 +66,6 @@ export async function GET() {
       }
     })
 
-    // Transform the response to match the expected format
     const formattedLocations = userLocations.map(location => ({
       _id: {
         oid: location.id

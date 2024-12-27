@@ -7,10 +7,9 @@ export async function GET() {
   try {
     const locations = await prisma.locationWithSpots.findMany()
 
-    // Transform the data to match the expected format
     const formattedLocations = locations.map(location => ({
       _id: {
-        oid: location.id // Changed from location._id
+        oid: location.id 
       },
       name: location.name,
       spots: location.spots

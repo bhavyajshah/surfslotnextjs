@@ -2,25 +2,25 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { User } from 'next-auth';
+import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LocationSearch } from "./location-search";
-import { ScheduledTab } from "./tabs/scheduled-tab";
-import { CalendarAccessNotification } from './notifications/calendar-access';
-import { SubscriptionNotification } from './notifications/subscription';
-import { SettingsTab } from './tabs/settings-tab';
+import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import { useLocations } from "@/hooks/use-locations";
-import { signOut, useSession } from "next-auth/react";
-import { Card } from '../ui/card';
+import { LocationSearch } from "./location-search";
+import { ScheduledTab } from "./tabs/scheduled-tab";
+import { SettingsTab } from './tabs/settings-tab';
+import { CalendarAccessNotification } from './notifications/calendar-access';
+import { SubscriptionNotification } from './notifications/subscription';
 
 function UserNav({ user }: { user: User }) {
   const handleSignOut = () => {
@@ -47,6 +47,7 @@ export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
   const {
     userLocations,
+    setUserLocations,
     isLoading,
     isInitialized,
     deleteUserLocation,
@@ -61,25 +62,44 @@ export default function DashboardContent({ user }: { user: User }) {
 
   const handleSpotToggle = useCallback(async (locationId: string | { oid: string }, spotId: string, checked: boolean) => {
     const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
-    const location = userLocations.find(loc => loc._id.oid === actualLocationId || loc.locationId === actualLocationId);
+    const location = userLocations.find(loc =>
+      loc._id.oid === actualLocationId || loc.locationId === actualLocationId
+    );
+
     if (!location) {
       console.error('Location not found:', actualLocationId);
-      console.log('Available locations:', userLocations.map(loc => ({ _id: loc._id, locationId: loc.locationId })));
       return;
     }
 
+    // Create a new array of spots with the updated enabled state
     const updatedSpots = location.spots.map((spot: any) =>
       spot.id === spotId ? { ...spot, enabled: checked } : spot
     );
 
     try {
-      console.log('Updating spots for location:', actualLocationId);
-      console.log('Updated spots:', updatedSpots);
+      // Update the UI immediately for better user experience
+      setUserLocations(prev =>
+        prev.map(loc =>
+          (loc._id.oid === actualLocationId || loc.locationId === actualLocationId)
+            ? { ...loc, spots: updatedSpots }
+            : loc
+        )
+      );
+
+      // Make the API call
       await updateLocationSpots(actualLocationId, updatedSpots);
     } catch (error) {
+      // Revert the UI change if the API call fails
+      setUserLocations(prev =>
+        prev.map(loc =>
+          (loc._id.oid === actualLocationId || loc.locationId === actualLocationId)
+            ? { ...loc, spots: location.spots }
+            : loc
+        )
+      );
       console.error('Error updating spots:', error);
     }
-  }, [userLocations, updateLocationSpots]);
+  }, [userLocations, updateLocationSpots, setUserLocations]);
 
   const handleLocationToggle = useCallback(async (locationId: string, enabled: boolean) => {
     try {
@@ -89,13 +109,13 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   }, [updateLocationEnabled]);
 
-  useEffect(() => {
-    if (session?.accessToken) {
-      const scope = (session as any)?.scope || '';
-      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
-      setHasCalendarAccess(hasCalendarScope);
+  const handleDeleteLocation = useCallback(async (locationId: string) => {
+    try {
+      await deleteUserLocation(locationId);
+    } catch (error) {
+      console.error('Error deleting location:', error);
     }
-  }, [session]);
+  }, [deleteUserLocation]); 
 
   const toggleLocationExpand = useCallback((locationId: string) => {
     setExpandedLocations(prev => ({
@@ -119,6 +139,14 @@ export default function DashboardContent({ user }: { user: User }) {
       console.error('Failed to activate subscription:', error);
     }
   }, []);
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      const scope = (session as any)?.scope || '';
+      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
+      setHasCalendarAccess(hasCalendarScope);
+    }
+  }, [session]);
 
   const renderLocationsContent = () => {
     if (isLoading || !isInitialized) {
@@ -144,9 +172,11 @@ export default function DashboardContent({ user }: { user: User }) {
             <div className="p-6">
               <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
               <div className="flex items-center justify-between mb-4">
-                <span
-                  className="text-sm text-blue-600 cursor-pointer"
+                <button
+                  className="text-sm text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
                   onClick={() => toggleLocationExpand(location._id.oid)}
+                  aria-expanded={expandedLocations[location._id.oid]}
+                  aria-controls={`spots-${location._id.oid}`}
                 >
                   {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
                   {expandedLocations[location._id.oid] ? (
@@ -154,20 +184,23 @@ export default function DashboardContent({ user }: { user: User }) {
                   ) : (
                     <ChevronDown className="inline ml-1" />
                   )}
-                </span>
+                </button>
               </div>
               {expandedLocations[location._id.oid] && (
-                <div className="space-y-2 mb-4">
+                <div
+                  id={`spots-${location._id.oid}`}
+                  className="space-y-2 mb-4"
+                >
                   {location.spots.map((spot: any) => (
                     <div key={spot.id} className="flex items-center space-x-2">
                       <Checkbox
-                        id={spot.id}
+                        id={`${location._id.oid}-${spot.id}`}
                         checked={spot.enabled}
                         onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
                         className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                       />
                       <label
-                        htmlFor={spot.id}
+                        htmlFor={`${location._id.oid}-${spot.id}`}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
                         {spot.name}
@@ -177,16 +210,18 @@ export default function DashboardContent({ user }: { user: User }) {
                 </div>
               )}
               <div className="flex items-center justify-end gap-4 mt-4">
-                <div
-                  className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
-                  onClick={() => deleteUserLocation(location._id.oid)}
+                <button
+                  className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  onClick={() => handleDeleteLocation(location._id.oid)}
+                  aria-label={`Delete ${location.locationName}`}
                 >
                   <Trash2 className="h-5 w-5 text-black" />
-                </div>
+                </button>
                 <Switch
                   checked={location.enabled}
                   onCheckedChange={(checked) => handleLocationToggle(location._id.oid, checked)}
                   className="bg-[#ADE2DF]"
+                  aria-label={`Toggle ${location.locationName}`}
                 />
               </div>
             </div>
@@ -205,33 +240,33 @@ export default function DashboardContent({ user }: { user: User }) {
   }
 
   return (
-    <div className="min-h-screen bg=[#FAFAFA] flex flex-col">
-      <header>
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
+      <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-end">
           <UserNav user={user} />
         </div>
       </header>
 
-      <div className="container mx-auto px-4 flex-1">
+      <main className="container mx-auto px-4 flex-1">
         <h1 className="text-[32px] font-normal mb-8 text-[#111827]">my surfslots</h1>
         <div className="border-b mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full justify-start space-x-8 h-auto bg-transparent p-0 border-b-2">
               <TabsTrigger
                 value="locations"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0"
+                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-2 text-lg border-transparent rounded-none px-0"
               >
                 locations
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0"
+                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-2 text-lg border-transparent rounded-none px-0"
               >
                 surf settings
               </TabsTrigger>
               <TabsTrigger
                 value="scheduled"
-                className="data-[state=active]:border-primary data-[state=active]:shadow-none border-b-2 border-[#264E8A] text-lg border-transparent rounded-none px-0"
+                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-2 text-lg border-transparent rounded-none px-0"
               >
                 scheduled surfslots
               </TabsTrigger>
@@ -270,7 +305,7 @@ export default function DashboardContent({ user }: { user: User }) {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

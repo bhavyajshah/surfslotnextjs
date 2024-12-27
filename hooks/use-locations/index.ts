@@ -169,7 +169,7 @@ export function useLocations() {
       console.log('Updated location:', updatedLocation);
       setUserLocations(prev =>
         prev.map(loc =>
-          loc.locationId === actualLocationId ? { ...loc, spots } : loc
+          (loc._id.oid === actualLocationId || loc.locationId === actualLocationId) ? { ...loc, spots } : loc
         )
       );
 
@@ -208,7 +208,7 @@ export function useLocations() {
       const updatedLocation = await response.json();
       setUserLocations(prev =>
         prev.map(loc =>
-          loc.locationId === locationId ? { ...loc, enabled } : loc
+          (loc._id.oid === locationId || loc.locationId === locationId) ? { ...loc, enabled } : loc
         )
       );
 
@@ -229,32 +229,37 @@ export function useLocations() {
     }
   }, [toast]);
 
-  const deleteUserLocation = useCallback(async (locationId: string) => {
-    try {
-      const response = await fetch(`/api/locations/user/${locationId}`, {
-        method: 'DELETE'
-      });
+const deleteUserLocation = useCallback(async (locationId: string) => {
+  try {
+    // Optimistically update UI
+    setUserLocations(prev => prev.filter(loc => loc._id.oid !== locationId));
 
-      if (!response.ok) {
-        throw new Error('Failed to delete location');
-      }
+    const response = await fetch(`/api/locations/user/${locationId}`, {
+      method: 'DELETE'
+    });
 
-      setUserLocations(prev => prev.filter(loc => loc.locationId !== locationId));
-
-      toast({
-        title: 'Success',
-        description: 'Location removed successfully'
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete location';
-      toast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
-      });
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete location');
     }
-  }, [toast]);
+
+    toast({
+      title: 'Success',
+      description: 'Location removed successfully'
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete location';
+    console.error('Error deleting location:', error);
+
+    await loadUserLocations();
+
+    toast({
+      title: 'Error',
+      description: message,
+      variant: 'destructive'
+    });
+  }
+}, [toast, loadUserLocations]);
 
   const refresh = useCallback(() => {
     initialLoadCompleteRef.current = false;
@@ -264,6 +269,7 @@ export function useLocations() {
   return {
     locations,
     userLocations,
+    setUserLocations,
     isLoading,
     isAddingLocation,
     isUpdatingLocations,
