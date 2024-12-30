@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextAuthOptions } from "next-auth";
 import { providers } from "./providers";
 import { ROUTES } from "@/lib/constants";
@@ -19,13 +18,37 @@ export const authConfig: NextAuthOptions = {
           include: { accounts: true }
         });
 
+        // Format tokens object
+        const tokens = {
+          access_token: account.access_token,
+          refresh_token: account.refresh_token,
+          scope: account.scope,
+          token_type: account.token_type,
+          id_token: account.id_token,
+          expiry_date: account.expires_at ? new Date(account.expires_at * 1000) : undefined
+        };
+
+        // Format profile object
+        const userProfile = {
+          id: profile.sub,
+          email: profile.email,
+          verified_email: profile.email_verified,
+          name: profile.name,
+          given_name: profile.given_name,
+          family_name: profile.family_name,
+          picture: profile.picture
+        };
+
         if (existingUser) {
           // Update existing user
           await prisma.user.update({
             where: { email: user.email },
             data: {
-              name: user.name ?? undefined,
-              image: user.image ?? undefined,
+              name: profile.name,
+              image: profile.picture,
+              profile: userProfile,
+              tokens: tokens,
+              enabled: true
             }
           });
 
@@ -48,13 +71,15 @@ export const authConfig: NextAuthOptions = {
             });
           }
         } else {
-          // Create new user with account
+          // Create new user with formatted data
           await prisma.user.create({
             data: {
               email: user.email,
-              name: user.name ?? undefined,
-              image: user.image ?? undefined,
-              profile: profile as any, // Cast to any to avoid type issues
+              name: profile.name,
+              image: profile.picture,
+              profile: userProfile,
+              tokens: tokens,
+              enabled: true,
               accounts: {
                 create: {
                   type: account.type,

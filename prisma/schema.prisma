@@ -13,11 +13,13 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  profile       Json?
-  tokens        Json?
+  profile       Json?     @db.Json // Stores Google profile data
+  tokens        Json?     @db.Json // Stores OAuth tokens
   calendarId    String?
   enabled       Boolean   @default(true)
-  subscription  Json?
+  subscription  Json?     @db.Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
   userLocations UserLocation[]
@@ -25,6 +27,7 @@ model User {
 
   @@map("users")
 }
+
 
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
