@@ -23,8 +23,15 @@ import { CalendarAccessNotification } from './notifications/calendar-access';
 import { SubscriptionNotification } from './notifications/subscription';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { useSubscription } from '@/hooks/use-subscription';
 
 function UserNav({ user }: { user: User }) {
+  const handleManageSubscription = () => {
+    if (user.email) {
+      window.location.href = `https://billing.stripe.com/p/login/test_14kcOOddLaVw6n65kk?prefilled_email=${encodeURIComponent(user.email)}`;
+    }
+  };
+
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
   };
@@ -40,10 +47,87 @@ function UserNav({ user }: { user: User }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem>Manage subscription</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleManageSubscription}>
+          Manage subscription
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function LocationCard({
+  location,
+  isExpanded,
+  onToggleExpand,
+  onSpotToggle,
+  onLocationToggle,
+  onDelete,
+  isLoading
+}: {
+  location: any;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onSpotToggle: (spotId: string, checked: boolean) => void;
+  onLocationToggle: (enabled: boolean) => void;
+  onDelete: () => void;
+  isLoading: boolean;
+}) {
+  return (
+    <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+      <div className="p-6">
+        <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            className="text-sm text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
+            onClick={onToggleExpand}
+            aria-expanded={isExpanded}
+          >
+            {isExpanded ? 'Hide' : 'View'} surf spots in {location.locationName}
+            {isExpanded ? <ChevronUp className="inline ml-1" /> : <ChevronDown className="inline ml-1" />}
+          </button>
+        </div>
+        {isExpanded && (
+          <div className="space-y-2 mb-4">
+            {location.spots.map((spot: any) => (
+              <div key={spot.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${location._id.oid}-${spot.id}`}
+                  checked={spot.enabled}
+                  onCheckedChange={(checked) => onSpotToggle(spot.id, checked as boolean)}
+                  className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                  disabled={isLoading}
+                />
+                <label
+                  htmlFor={`${location._id.oid}-${spot.id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {spot.name}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-4 mt-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            disabled={isLoading}
+            aria-label={`Delete ${location.locationName}`}
+          >
+            {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          </Button>
+          <Switch
+            checked={location.enabled}
+            onCheckedChange={onLocationToggle}
+            className="bg-[#ADE2DF]"
+            aria-label={`Toggle ${location.locationName}`}
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -57,14 +141,36 @@ export default function DashboardContent({ user }: { user: User }) {
     addUserLocation,
     updateLocationSpots,
     updateLocationEnabled,
-    loadUserLocations
   } = useLocations();
+
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [hasCalendarAccess, setHasCalendarAccess] = useState(true);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const { isActive: hasActiveSubscription } = useSubscription();
   const { data: session } = useSession();
   const { toast } = useToast();
   const [loadingLocations, setLoadingLocations] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      const scope = (session as any)?.scope || '';
+      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
+      setHasCalendarAccess(hasCalendarScope);
+    }
+  }, []);
+
+  const handleCalendarAccess = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Failed to request calendar access:', error);
+    }
+  }, []);
+
+  const handleSubscriptionActivate = useCallback(async () => {
+    if (user.email) {
+      window.location.href = `https://buy.stripe.com/test_bIYg0p5sedaNayc7st?prefilled_email=${encodeURIComponent(user.email)}`;
+    }
+  }, [user.email]);
 
   const handleSpotToggle = useCallback(async (locationId: string | { oid: string }, spotId: string, checked: boolean) => {
     const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
@@ -72,18 +178,15 @@ export default function DashboardContent({ user }: { user: User }) {
       loc._id.oid === actualLocationId || loc.locationId === actualLocationId
     );
 
-    if (!location) {
-      console.error('Location not found:', actualLocationId);
-      return;
-    }
+    if (!location) return;
 
     setLoadingLocations(prev => ({ ...prev, [actualLocationId]: true }));
 
-    const updatedSpots = location.spots.map((spot: any) =>
-      spot.id === spotId ? { ...spot, enabled: checked } : spot
-    );
-
     try {
+      const updatedSpots = location.spots.map((spot: any) =>
+        spot.id === spotId ? { ...spot, enabled: checked } : spot
+      );
+
       await updateLocationSpots(actualLocationId, updatedSpots);
       toast({
         title: 'Success',
@@ -95,7 +198,6 @@ export default function DashboardContent({ user }: { user: User }) {
         description: 'Failed to update spot status',
         variant: 'destructive',
       });
-      console.error('Error updating spots:', error);
     } finally {
       setLoadingLocations(prev => ({ ...prev, [actualLocationId]: false }));
     }
@@ -115,7 +217,6 @@ export default function DashboardContent({ user }: { user: User }) {
         description: 'Failed to update location status',
         variant: 'destructive',
       });
-      console.error('Error updating location enabled status:', error);
     } finally {
       setLoadingLocations(prev => ({ ...prev, [locationId]: false }));
     }
@@ -135,34 +236,10 @@ export default function DashboardContent({ user }: { user: User }) {
         description: 'Failed to delete location',
         variant: 'destructive',
       });
-      console.error('Error deleting location:', error);
     } finally {
       setLoadingLocations(prev => ({ ...prev, [locationId]: false }));
     }
   }, [deleteUserLocation, toast]);
-
-  const toggleLocationExpand = useCallback((locationId: string) => {
-    setExpandedLocations(prev => ({
-      ...prev,
-      [locationId]: !prev[locationId]
-    }));
-  }, []);
-
-  const handleCalendarAccess = useCallback(async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Failed to request calendar access:', error);
-    }
-  }, []);
-
-  const handleSubscriptionActivate = useCallback(async () => {
-    try {
-      setHasActiveSubscription(true);
-    } catch (error) {
-      console.error('Failed to activate subscription:', error);
-    }
-  }, []);
 
   const handleAddLocation = useCallback(async (locationId: string) => {
     setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
@@ -183,13 +260,12 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   }, [addUserLocation, toast]);
 
-  useEffect(() => {
-    if (session?.accessToken) {
-      const scope = (session as any)?.scope || '';
-      const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
-      setHasCalendarAccess(hasCalendarScope);
-    }
-  }, [session]);
+  const toggleLocationExpand = useCallback((locationId: string) => {
+    setExpandedLocations(prev => ({
+      ...prev,
+      [locationId]: !prev[locationId]
+    }));
+  }, []);
 
   const renderLocationsContent = () => {
     if (isLoading || !isInitialized) {
@@ -211,72 +287,16 @@ export default function DashboardContent({ user }: { user: User }) {
     return (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {userLocations.map((location: any) => (
-          <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
-            <div className="p-6">
-              <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  className="text-sm text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
-                  onClick={() => toggleLocationExpand(location._id.oid)}
-                  aria-expanded={expandedLocations[location._id.oid]}
-                  aria-controls={`spots-${location._id.oid}`}
-                >
-                  {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
-                  {expandedLocations[location._id.oid] ? (
-                    <ChevronUp className="inline ml-1" />
-                  ) : (
-                    <ChevronDown className="inline ml-1" />
-                  )}
-                </button>
-              </div>
-              {expandedLocations[location._id.oid] && (
-                <div
-                  id={`spots-${location._id.oid}`}
-                  className="space-y-2 mb-4"
-                >
-                  {location.spots.map((spot: any) => (
-                    <div key={spot.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${location._id.oid}-${spot.id}`}
-                        checked={spot.enabled}
-                        onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
-                        className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
-                        disabled={loadingLocations[location._id.oid]}
-                      />
-                      <label
-                        htmlFor={`${location._id.oid}-${spot.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {spot.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center justify-end gap-4 mt-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteLocation(location._id.oid)}
-                  disabled={loadingLocations[location._id.oid]}
-                  aria-label={`Delete ${location.locationName}`}
-                >
-                  {loadingLocations[location._id.oid] ? (
-                    <Loader className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
-                <Switch
-                  checked={location.enabled}
-                  onCheckedChange={(checked) => handleLocationToggle(location._id.oid, checked)}
-                  className="bg-[#ADE2DF]"
-                  aria-label={`Toggle ${location.locationName}`}
-                  disabled={loadingLocations[location._id.oid]}
-                />
-              </div>
-            </div>
-          </Card>
+          <LocationCard
+            key={location._id.oid}
+            location={location}
+            isExpanded={expandedLocations[location._id.oid]}
+            onToggleExpand={() => toggleLocationExpand(location._id.oid)}
+            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id.oid, spotId, checked)}
+            onLocationToggle={(enabled) => handleLocationToggle(location._id.oid, enabled)}
+            onDelete={() => handleDeleteLocation(location._id.oid)}
+            isLoading={loadingLocations[location._id.oid]}
+          />
         ))}
       </div>
     );
@@ -292,7 +312,7 @@ export default function DashboardContent({ user }: { user: User }) {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
-      <header className="border-b">
+      <header>
         <div className="container mx-auto px-4 py-4 flex justify-end">
           <UserNav user={user} />
         </div>

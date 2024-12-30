@@ -17,12 +17,10 @@ export async function GET() {
         id: true,
         email: true,
         profile: true,
-        // locations: {
-        //   include: {
-        //     spots: true
-        //   }
-        // },
-        // slots: true
+        tokens: true,
+        calendarId: true,
+        enabled: true,
+        subscription: true,
       }
     });
 
