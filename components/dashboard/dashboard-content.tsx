@@ -118,23 +118,31 @@ export default function DashboardContent({ user }: { user: User }) {
   }, [user.email]);
 
   const handleSpotToggle = useCallback(async (locationId: string, spotId: string, checked: boolean) => {
-    const location = userLocations.find(loc => loc._id === locationId);
-
-    if (!location) return;
-
     setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
 
     try {
-      const updatedSpots = location.spots.map((spot: any) =>
-        spot.id === spotId ? { ...spot, enabled: checked } : spot
-      );
-
-      await updateLocationSpots(locationId, updatedSpots);
-      toast({
-        title: 'Success',
-        description: `Spot ${checked ? 'enabled' : 'disabled'} successfully`,
+      const updatedLocations = userLocations.map(location => {
+        if (location._id.oid === locationId) {
+          const updatedSpots = location.spots.map((spot: { id: string; }) =>
+            spot.id === spotId ? { ...spot, enabled: checked } : spot
+          );
+          return { ...location, spots: updatedSpots };
+        }
+        return location;
       });
+
+      setUserLocations(updatedLocations);
+
+      const locationToUpdate = updatedLocations.find(loc => loc._id.oid === locationId);
+      if (locationToUpdate) {
+        await updateLocationSpots(locationId, locationToUpdate.spots);
+        toast({
+          title: 'Success',
+          description: `Spot ${checked ? 'enabled' : 'disabled'} successfully`,
+        });
+      }
     } catch (error) {
+      console.error('Error updating spot:', error);
       toast({
         title: 'Error',
         description: 'Failed to update spot status',
@@ -231,21 +239,6 @@ export default function DashboardContent({ user }: { user: User }) {
 
     return (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* {userLocations.map((location: any) => (
-          <LocationCard
-            key={location._id}
-            location={location}
-            isExpanded={expandedLocations[location._id]}
-            onToggleExpand={() => toggleLocationExpand(location._id)}
-            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id, spotId, checked)}
-            onLocationToggle={(enabled) => handleLocationToggle(location._id, enabled)}
-            onDelete={() => handleDeleteLocation(location._id)}
-            isLoading={loadingLocations[location._id]}
-          />
-        ))} */}
-
-
-
         {userLocations.map((location: any) => (
           <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
             <div className="p-6">
@@ -271,6 +264,7 @@ export default function DashboardContent({ user }: { user: User }) {
                         id={spot.id}
                         checked={spot.enabled}
                         onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
+                        disabled={loadingLocations[location._id.oid]}
                         className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                       />
                       <label
