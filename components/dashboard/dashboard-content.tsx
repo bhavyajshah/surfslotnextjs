@@ -57,15 +57,7 @@ function UserNav({ user }: { user: User }) {
   );
 }
 
-function LocationCard({
-  location,
-  isExpanded,
-  onToggleExpand,
-  onSpotToggle,
-  onLocationToggle,
-  onDelete,
-  isLoading
-}: {
+interface LocationCardProps {
   location: any;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -73,69 +65,13 @@ function LocationCard({
   onLocationToggle: (enabled: boolean) => void;
   onDelete: () => void;
   isLoading: boolean;
-}) {
-  return (
-    <Card key={location.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
-      <div className="p-6">
-        <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
-        <div className="flex items-center justify-between mb-4">
-          <button
-            className="text-sm text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
-            onClick={onToggleExpand}
-            aria-expanded={isExpanded}
-          >
-            {isExpanded ? 'Hide' : 'View'} surf spots in {location.locationName}
-            {isExpanded ? <ChevronUp className="inline ml-1" /> : <ChevronDown className="inline ml-1" />}
-          </button>
-        </div>
-        {isExpanded && (
-          <div className="space-y-2 mb-4">
-            {location.spots.map((spot: any) => (
-              <div key={spot.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${location.oid}-${spot.id}`}
-                  checked={spot.enabled}
-                  onCheckedChange={(checked) => onSpotToggle(spot.id, checked as boolean)}
-                  className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
-                  disabled={isLoading}
-                />
-                <label
-                  htmlFor={`${location.oid}-${spot.id}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {spot.name}
-                </label>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center justify-end gap-4 mt-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDelete}
-            disabled={isLoading}
-            aria-label={`Delete ${location.locationName}`}
-          >
-            {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          </Button>
-          <Switch
-            checked={location.enabled}
-            onCheckedChange={onLocationToggle}
-            className="bg-[#ADE2DF]"
-            aria-label={`Toggle ${location.locationName}`}
-            disabled={isLoading}
-          />
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
+  const [userLocations, setUserLocations] = useState<any[]>([]);
   const {
-    userLocations,
+    userLocations: initialUserLocations,
     isLoading,
     isInitialized,
     deleteUserLocation,
@@ -159,6 +95,12 @@ export default function DashboardContent({ user }: { user: User }) {
       setHasCalendarAccess(hasCalendarScope);
     }
   }, [session]);
+
+  useEffect(() => {
+    if (isInitialized) {
+      setUserLocations(initialUserLocations);
+    }
+  }, [isInitialized, initialUserLocations]);
 
   const handleCalendarAccess = useCallback(async () => {
     try {
@@ -244,7 +186,10 @@ export default function DashboardContent({ user }: { user: User }) {
   const handleAddLocation = useCallback(async (locationId: string) => {
     setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
     try {
-      await addUserLocation(locationId);
+      const newLocation = await addUserLocation(locationId);
+      if (newLocation) {
+        setUserLocations(prev => [...prev, newLocation]);
+      }
       toast({
         title: 'Success',
         description: 'Location added successfully',
@@ -286,17 +231,73 @@ export default function DashboardContent({ user }: { user: User }) {
 
     return (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {userLocations.map((location: any) => (
+        {/* {userLocations.map((location: any) => (
           <LocationCard
-            key={location._id.oid || location._id}
+            key={location._id}
             location={location}
-            isExpanded={expandedLocations[location._id.oid || location._id]}
-            onToggleExpand={() => toggleLocationExpand(location._id.oid || location._id)}
-            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id.oid || location._id, spotId, checked)}
-            onLocationToggle={(enabled) => handleLocationToggle(location._id.oid || location._id, enabled)}
-            onDelete={() => handleDeleteLocation(location._id.oid || location._id)}
-            isLoading={loadingLocations[location._id.oid || location._id]}
+            isExpanded={expandedLocations[location._id]}
+            onToggleExpand={() => toggleLocationExpand(location._id)}
+            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id, spotId, checked)}
+            onLocationToggle={(enabled) => handleLocationToggle(location._id, enabled)}
+            onDelete={() => handleDeleteLocation(location._id)}
+            isLoading={loadingLocations[location._id]}
           />
+        ))} */}
+
+
+
+        {userLocations.map((location: any) => (
+          <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+            <div className="p-6">
+              <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
+              <div className="flex items-center justify-between mb-4">
+                <span
+                  className="text-sm text-blue-600 cursor-pointer"
+                  onClick={() => toggleLocationExpand(location._id.oid)}
+                >
+                  {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
+                  {expandedLocations[location._id.oid] ? (
+                    <ChevronUp className="inline ml-1" />
+                  ) : (
+                    <ChevronDown className="inline ml-1" />
+                  )}
+                </span>
+              </div>
+              {expandedLocations[location._id.oid] && (
+                <div className="space-y-2 mb-4">
+                  {location.spots.map((spot: any) => (
+                    <div key={spot.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={spot.id}
+                        checked={spot.enabled}
+                        onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
+                        className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                      />
+                      <label
+                        htmlFor={spot.id}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {spot.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-4 mt-4">
+                <div
+                  className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
+                  onClick={() => deleteUserLocation(location._id.oid)}
+                >
+                  <Trash2 className="h-5 w-5 text-black" />
+                </div>
+                <Switch
+                  checked={location.enabled}
+                  onCheckedChange={(checked) => handleLocationToggle(location._id.oid, checked)}
+                  className="bg-[#ADE2DF]"
+                />
+              </div>
+            </div>
+          </Card>
         ))}
       </div>
     );
