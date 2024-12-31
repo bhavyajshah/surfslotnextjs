@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { User } from 'next-auth';
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
@@ -57,27 +57,17 @@ function UserNav({ user }: { user: User }) {
   );
 }
 
-interface LocationCardProps {
-  location: any;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
-  onSpotToggle: (spotId: string, checked: boolean) => void;
-  onLocationToggle: (enabled: boolean) => void;
-  onDelete: () => void;
-  isLoading: boolean;
-}
-
 export default function DashboardContent({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
-  const [userLocations, setUserLocations] = useState<any[]>([]);
   const {
-    userLocations: initialUserLocations,
+    userLocations,
     isLoading,
     isInitialized,
     deleteUserLocation,
     addUserLocation,
     updateLocationSpots,
     updateLocationEnabled,
+    loadUserLocations,
   } = useLocations();
 
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
@@ -88,7 +78,8 @@ export default function DashboardContent({ user }: { user: User }) {
   const [loadingLocations, setLoadingLocations] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
-  useEffect(() => {
+  // Memoize session scope check
+  const checkCalendarAccess = useCallback(() => {
     if (session?.accessToken) {
       const scope = (session as any)?.scope || '';
       const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
@@ -97,10 +88,15 @@ export default function DashboardContent({ user }: { user: User }) {
   }, [session]);
 
   useEffect(() => {
-    if (isInitialized) {
-      setUserLocations(initialUserLocations);
+    checkCalendarAccess();
+  }, [checkCalendarAccess]);
+
+  // Single initialization effect
+  useEffect(() => {
+    if (session?.user?.id && !isInitialized) {
+      loadUserLocations();
     }
-  }, [isInitialized, initialUserLocations]);
+  }, [session?.user?.id, isInitialized, loadUserLocations]);
 
   const handleCalendarAccess = useCallback(async () => {
     try {
@@ -121,21 +117,12 @@ export default function DashboardContent({ user }: { user: User }) {
     setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
 
     try {
-      const updatedLocations = userLocations.map(location => {
-        if (location._id.oid === locationId) {
-          const updatedSpots = location.spots.map((spot: { id: string; }) =>
-            spot.id === spotId ? { ...spot, enabled: checked } : spot
-          );
-          return { ...location, spots: updatedSpots };
-        }
-        return location;
-      });
-
-      setUserLocations(updatedLocations);
-
-      const locationToUpdate = updatedLocations.find(loc => loc._id.oid === locationId);
+      const locationToUpdate = userLocations.find(loc => loc._id.oid === locationId);
       if (locationToUpdate) {
-        await updateLocationSpots(locationId, locationToUpdate.spots);
+        const updatedSpots = locationToUpdate.spots.map(spot =>
+          spot.id === spotId ? { ...spot, enabled: checked } : spot
+        );
+        await updateLocationSpots(locationId, updatedSpots);
         toast({
           title: 'Success',
           description: `Spot ${checked ? 'enabled' : 'disabled'} successfully`,
@@ -196,12 +183,11 @@ export default function DashboardContent({ user }: { user: User }) {
     try {
       const newLocation = await addUserLocation(locationId);
       if (newLocation) {
-        setUserLocations(prev => [...prev, newLocation]);
+        toast({
+          title: 'Success',
+          description: 'Location added successfully',
+        });
       }
-      toast({
-        title: 'Success',
-        description: 'Location added successfully',
-      });
     } catch (error) {
       toast({
         title: 'Error',
@@ -258,7 +244,7 @@ export default function DashboardContent({ user }: { user: User }) {
               </div>
               {expandedLocations[location._id.oid] && (
                 <div className="space-y-2 mb-4">
-                  {location.spots.map((spot: any) => (
+                  {location.spots.map((spot:any) => (
                     <div key={spot.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={spot.id}
@@ -280,7 +266,7 @@ export default function DashboardContent({ user }: { user: User }) {
               <div className="flex items-center justify-end gap-4 mt-4">
                 <div
                   className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
-                  onClick={() => deleteUserLocation(location._id.oid)}
+                  onClick={() => handleDeleteLocation(location._id.oid)}
                 >
                   <Trash2 className="h-5 w-5 text-black" />
                 </div>
