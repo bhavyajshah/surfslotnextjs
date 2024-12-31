@@ -7,14 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  profile       Json?     @db.Json // Stores Google profile data
-  tokens        Json?     @db.Json // Stores OAuth tokens
+  profile       Json?     @db.Json
+  tokens        Json?     @db.Json
   calendarId    String?
   enabled       Boolean   @default(true)
   subscription  Json?     @db.Json
@@ -23,7 +24,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   userLocations UserLocation[]
-  userSpots     UserSpot[]
+  userSlots     UserSlot[]
 
   @@map("users")
 }
@@ -92,14 +93,14 @@ model UserLocation {
   @@map("userLocations")
 }
 
-model UserSpot {
+model UserSlot {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   summary     String
   description String
-  start       DateTime
-  end         DateTime
+  start       DateTime @db.Date
+  end         DateTime @db.Date
   userId      String   @db.ObjectId
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("userSpots")
+  @@map("userSlots")
 }

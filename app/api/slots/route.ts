@@ -4,8 +4,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from '@/lib/auth';
 
 // Initialize Prisma client outside of the handler to prevent multiple instances
-const prisma = new PrismaClient();
-
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
 export async function GET(request: Request) {
   console.log('Entering GET function for /api/slots');
   try {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
     // If userId is not in the query, try to get it from the session
     if (!userId) {
       const session = await getServerSession(authOptions);
-      userId = session?.user?.id ?? null;
+      userId = session?.user?.id;
       console.log('Retrieved userId from session:', userId);
     }
 
@@ -31,9 +32,9 @@ export async function GET(request: Request) {
     console.log('Attempting to fetch userSlots from database with userId:', userId);
 
     // Use Prisma's standard query syntax
-    const userSlots = await prisma.userSpot.findMany({
+    const userSlots = await prisma.userSlot.findMany({
       where: {
-        id: userId
+        userId: userId  // Changed from 'id' to 'userId'
       },
       select: {
         id: true,
