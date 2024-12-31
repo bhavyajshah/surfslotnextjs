@@ -1,18 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { Plus, Loader2 } from 'lucide-react'
-import {
-    Command,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from "@/components/ui/command"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover"
+import { Plus, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useLocations } from "@/hooks/use-locations"
 
 interface LocationSearchProps {
@@ -21,49 +10,75 @@ interface LocationSearchProps {
 
 export function LocationSearch({ onSelect }: LocationSearchProps) {
     const [open, setOpen] = React.useState(false)
+    const [search, setSearch] = React.useState('')
     const { locations, userLocations, loadLocations, isLoading, isAddingLocation } = useLocations();
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-    // Only load locations when opening the popover
-    const handleOpenChange = (newOpen: boolean) => {
-        if (newOpen) {
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    React.useEffect(() => {
+        if (!open) {
+            setSearch('');
+        }
+    }, [open]);
+
+    const handleOpenChange = () => {
+        if (!open) {
             loadLocations();
         }
-        setOpen(newOpen);
+        setOpen(!open);
     };
 
     const availableLocations = locations.filter((loc: any) =>
-        !userLocations.some((userLoc: { locationId: string }) => userLoc.locationId === loc._id.oid)
+        !userLocations.some((userLoc: { locationId: string }) => userLoc.locationId === loc._id.oid) &&
+        loc.name.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleLocationSelect = async (locationId: string) => {
         try {
             await onSelect(locationId);
             setOpen(false);
+            setSearch(''); // Reset search when closing
         } catch (error) {
             console.error('Failed to add location:', error);
         }
     };
 
     return (
-        <Popover open={open} onOpenChange={handleOpenChange}>
-            <PopoverTrigger asChild>
-                <div
-                    className="flex items-center gap-2 bg-[#ADE2DF] hover:bg-[#ADE2DF] text-black px-3 py-2 rounded-full cursor-pointer"
-                    role="combobox"
-                    aria-expanded={open}
-                >
-                    {isAddingLocation ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Plus className="h-4 w-4" />
-                    )}
-                    <span>{isAddingLocation ? 'Adding location...' : 'Add new location'}</span>
-                </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0">
-                <Command>
-                    <CommandInput placeholder="Search location..." />
-                    <CommandGroup>
+        <div className="relative w-[200px]" ref={dropdownRef}>
+            <div
+                className="flex items-center gap-2 bg-[#ADE2DF] hover:bg-[#9CD8D5] text-black px-3 py-2 rounded-full cursor-pointer transition-colors duration-200"
+                onClick={handleOpenChange}
+            >
+                {isAddingLocation ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                    <Plus className="h-4 w-4" />
+                )}
+                <span>{isAddingLocation ? 'Adding location...' : 'Add new location'}</span>
+                {open ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+            </div>
+            {open && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                    <input
+                        type="text"
+                        placeholder="Search location..."
+                        className="w-full px-3 py-2 border-b border-gray-200 rounded-t-md focus:outline-none"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <div className="max-h-60 overflow-y-auto">
                         {isLoading ? (
                             <div className="flex items-center justify-center py-6">
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -74,19 +89,18 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                             </div>
                         ) : (
                             availableLocations.map((location: any) => (
-                                <CommandItem
+                                <div
                                     key={location._id.oid}
-                                    value={location._id.oid}
-                                    onSelect={() => handleLocationSelect(location._id.oid)}
-                                    disabled={isAddingLocation}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                                    onClick={() => handleLocationSelect(location._id.oid)}
                                 >
                                     {location.name}
-                                </CommandItem>
+                                </div>
                             ))
                         )}
-                    </CommandGroup>
-                </Command>
-            </PopoverContent>
-        </Popover>
+                    </div>
+                </div>
+            )}
+        </div>
     )
 }
