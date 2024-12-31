@@ -1,13 +1,27 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Location } from './types';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 
+interface Spot {
+  name: string;
+  id: string;
+  enabled: boolean;
+}
+
+interface Location {
+  _id: string;
+  userId: string;
+  locationId: string;
+  locationName: string;
+  enabled: boolean;
+  spots: Spot[];
+}
+
 export function useLocations() {
   const [locations, setLocations] = useState<Location[]>([]);
-  const [userLocations, setUserLocations] = useState<any[]>([]);
+  const [userLocations, setUserLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [isUpdatingLocations, setIsUpdatingLocations] = useState(false);
@@ -98,13 +112,13 @@ export function useLocations() {
       }
 
       const currentLocations = await loadLocations();
-      const location = currentLocations.find((loc: any) => loc._id.oid === locationId);
+      const location = currentLocations.find((loc: any) => loc._id === locationId);
       if (!location) {
         throw new Error('Location not found');
       }
 
       const payload = {
-        locationId: location._id.oid,
+        locationId: location._id,
         locationName: location.name,
         spots: location.spots.map((spot: any) => ({
           ...spot,
@@ -144,16 +158,15 @@ export function useLocations() {
     }
   }, [userLocations, loadLocations, toast, isAddingLocation]);
 
-  const updateLocationSpots = useCallback(async (locationId: string | { oid: string }, spots: any[]) => {
+  const updateLocationSpots = useCallback(async (locationId: string, spots: Spot[]) => {
     if (isUpdatingLocations) return;
 
     try {
       setIsUpdatingLocations(true);
-      const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
-      console.log('Updating spots for location:', actualLocationId);
+      console.log('Updating spots for location:', locationId);
       console.log('Current userLocations:', userLocations);
       console.log('Spots data:', JSON.stringify(spots, null, 2));
-      const response = await fetch(`/api/locations/user/${actualLocationId}/spots`, {
+      const response = await fetch(`/api/locations/user/${locationId}/spots`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ spots })
@@ -169,7 +182,7 @@ export function useLocations() {
       console.log('Updated location:', updatedLocation);
       setUserLocations(prev =>
         prev.map(loc =>
-          (loc._id.oid === actualLocationId || loc.locationId === actualLocationId) ? { ...loc, spots } : loc
+          loc._id === locationId ? { ...loc, spots } : loc
         )
       );
 
@@ -208,7 +221,7 @@ export function useLocations() {
       const updatedLocation = await response.json();
       setUserLocations(prev =>
         prev.map(loc =>
-          (loc._id.oid === locationId || loc.locationId === locationId) ? { ...loc, enabled } : loc
+          loc._id === locationId ? { ...loc, enabled } : loc
         )
       );
 
@@ -229,37 +242,38 @@ export function useLocations() {
     }
   }, [toast]);
 
-const deleteUserLocation = useCallback(async (locationId: string) => {
-  try {
-    // Optimistically update UI
-    setUserLocations(prev => prev.filter(loc => loc._id.oid !== locationId));
+  const deleteUserLocation = useCallback(async (locationId: string) => {
+    try {
+      // Optimistically update UI
+      setUserLocations(prev => prev.filter(loc => loc._id !== locationId));
 
-    const response = await fetch(`/api/locations/user/${locationId}`, {
-      method: 'DELETE'
-    });
+      const response = await fetch(`/api/locations/user/${locationId}`, {
+        method: 'DELETE'
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete location');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete location');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Location removed successfully'
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete location';
+      console.error('Error deleting location:', error);
+
+      // Revert the optimistic update
+      await loadUserLocations();
+
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
     }
-
-    toast({
-      title: 'Success',
-      description: 'Location removed successfully'
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to delete location';
-    console.error('Error deleting location:', error);
-
-    await loadUserLocations();
-
-    toast({
-      title: 'Error',
-      description: message,
-      variant: 'destructive'
-    });
-  }
-}, [toast, loadUserLocations]);
+  }, [toast, loadUserLocations]);
 
   const refresh = useCallback(() => {
     initialLoadCompleteRef.current = false;

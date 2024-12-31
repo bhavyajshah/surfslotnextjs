@@ -288,14 +288,14 @@ export default function DashboardContent({ user }: { user: User }) {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {userLocations.map((location: any) => (
           <LocationCard
-            key={location._id}
+            key={location._id.oid || location._id}
             location={location}
-            isExpanded={expandedLocations[location._id]}
-            onToggleExpand={() => toggleLocationExpand(location._id)}
-            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id, spotId, checked)}
-            onLocationToggle={(enabled) => handleLocationToggle(location._id, enabled)}
-            onDelete={() => handleDeleteLocation(location._id)}
-            isLoading={loadingLocations[location._id]}
+            isExpanded={expandedLocations[location._id.oid || location._id]}
+            onToggleExpand={() => toggleLocationExpand(location._id.oid || location._id)}
+            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id.oid || location._id, spotId, checked)}
+            onLocationToggle={(enabled) => handleLocationToggle(location._id.oid || location._id, enabled)}
+            onDelete={() => handleDeleteLocation(location._id.oid || location._id)}
+            isLoading={loadingLocations[location._id.oid || location._id]}
           />
         ))}
       </div>
