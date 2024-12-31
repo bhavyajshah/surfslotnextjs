@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { InfoIcon, Loader } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface SurfSlot {
   id: string;
@@ -25,35 +25,49 @@ export function ScheduledTab() {
     const fetchSlots = async (userId: string) => {
       try {
         setIsLoading(true);
-        console.log('Fetching slots for userId:', userId);
         const response = await fetch(`/api/slots?userId=${userId}`);
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch slots');
         }
+
         const data = await response.json();
-        console.log('Fetched slots:', data);
         setSlots(data);
         setError(null);
       } catch (error) {
-        console.error('Error fetching slots:', error);
-        setError('Failed to fetch slots. Please try again later.');
+        setError(error instanceof Error ? error.message : 'Failed to fetch slots');
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Only fetch if we have a valid session and userId
     if (status === 'authenticated' && session?.user?.id) {
-      console.log('Session:', session);
       fetchSlots(session.user.id);
     } else if (status === 'unauthenticated') {
       setIsLoading(false);
       setError('User not authenticated');
     }
-  }, [session?.user?.id, status]); // Only depend on userId and status
+  }, [session?.user?.id, status]);
+
+  const formatDateTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return {
+        date: date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      };
+    } catch (e) {
+      return { date: 'Invalid date', time: 'Invalid time' };
+    }
+  };
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
   }
 
   if (error) {
@@ -67,38 +81,50 @@ export function ScheduledTab() {
 
   if (!slots || slots.length === 0) {
     return (
-      <Alert variant="secondary" className="max-w-3xl mx-auto">
+      <Alert variant="secondary" className="max-w-6xl mx-auto">
         <InfoIcon className="h-4 w-4" />
         <AlertDescription className="ml-2">
-          There are no surfslots available for your selected spots. You will have some time
-          to get work done and prepare for when the swell comes in.
+          No surfslots available for your selected spots. Check back later when the swell comes in.
         </AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {slots.map(slot => {
-        const startDate = new Date(slot.start);
-        const endDate = new Date(slot.end);
+        const startDateTime = formatDateTime(slot.start);
+        const endDateTime = formatDateTime(slot.end);
 
         return (
-          <Card key={slot.id} className="p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-xl text-black font-medium">
-              {startDate.toLocaleDateString()} from {startDate.toLocaleTimeString()} to {endDate.toLocaleTimeString()}
-            </h3>
-            <p className="text-gray-600 text-md mt-1">
-              {slot.description}
-            </p>
+          <Card key={slot.id} className="overflow-hidden transition-all shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                {startDateTime.date}
+              </CardTitle>
+              <p className="text-sm opacity-90">
+                {startDateTime.time} - {endDateTime.time}
+              </p>
+            </CardHeader>
+            <CardContent className="p-4">
+              <h3 className="text-xl font-semibold mb-2 text-gray-800">{slot.summary}</h3>
+              <div className="text-gray-600 space-y-2">
+                {slot.description.split('\n').map((line, index) => (
+                  <p key={index} className="text-sm">
+                    {line || <br />}
+                  </p>
+                ))}
+              </div>
+            </CardContent>
           </Card>
         );
       })}
       {slots.length > 0 && (
-        <p className="text-gray-600 mt-8 pt-4 border-t">
-          All the slots above are scheduled in your Google Calendar.
+        <p className="text-gray-600 mt-8 pt-4  text-center">
+          All slots are scheduled in your Google Calendar.
         </p>
       )}
     </div>
   );
 }
+

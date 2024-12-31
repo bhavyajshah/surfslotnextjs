@@ -3,38 +3,31 @@ import { PrismaClient } from '@prisma/client';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from '@/lib/auth';
 
-// Initialize Prisma client outside of the handler to prevent multiple instances
 const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
+
 export async function GET(request: Request) {
-  console.log('Entering GET function for /api/slots');
   try {
     const { searchParams } = new URL(request.url);
     let userId = searchParams.get('userId');
-    console.log('Received userId from query:', userId);
 
-    // If userId is not in the query, try to get it from the session
     if (!userId) {
       const session = await getServerSession(authOptions);
-      userId = session?.user?.id;
-      console.log('Retrieved userId from session:', userId);
+      userId = session?.user?.id ?? null;
     }
 
     if (!userId) {
-      console.log('No userId provided in query or found in session');
       return NextResponse.json(
         { error: 'User ID is required' },
         { status: 400 }
       );
     }
 
-    console.log('Attempting to fetch userSlots from database with userId:', userId);
-
-    // Use Prisma's standard query syntax
+    // Fetch user slots
     const userSlots = await prisma.userSlot.findMany({
       where: {
-        userId: userId  // Changed from 'id' to 'userId'
+        userId: userId
       },
       select: {
         id: true,
@@ -46,15 +39,27 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log('Retrieved slots:', JSON.stringify(userSlots, null, 2));
-
+    // No need to format dates since they're already stored as ISO strings
     return NextResponse.json(userSlots);
 
   } catch (error) {
     console.error('Error in /api/slots:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        {
+          error: 'Failed to fetch user slots',
+          message: error.message,
+          type: error.name
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch user slots' },
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
 }
+

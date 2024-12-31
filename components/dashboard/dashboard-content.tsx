@@ -312,17 +312,17 @@ export default function DashboardContent({ user }: { user: User }) {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
-      <header>
+      <header className='bg-white'>
         <div className="container mx-auto px-4 py-4 flex justify-end">
           <UserNav user={user} />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 flex-1">
+      <main className="container bg-white mx-auto px-4 flex-1">
         <h1 className="text-[32px] font-normal mb-8 text-[#111827]">my surfslots</h1>
         <div className="border-b mb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start space-x-8 h-auto bg-transparent p-0 border-b-2">
+            <TabsList className="w-full justify-start space-x-8 h-auto bg-white p-0 border-b-2">
               <TabsTrigger
                 value="locations"
                 className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-2 text-lg border-transparent rounded-none px-0"
