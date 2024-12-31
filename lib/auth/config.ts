@@ -29,17 +29,16 @@ async function createUserCalendar(accessToken: string, userEmail: string) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Failed to create calendar:', errorData);
-      throw new Error('Failed to create calendar');
+      console.warn('Failed to create calendar - continuing with signup');
+      return null;
     }
 
     const calendarData = await response.json();
     return calendarData.id;
 
   } catch (error) {
-    console.error('Error creating calendar:', error);
-    throw error;
+    console.warn('Error creating calendar - continuing with signup:', error);
+    return null;
   }
 }
 
@@ -87,7 +86,10 @@ export const authConfig: NextAuthOptions = {
           picture: profile.picture
         };
 
-        const calendarId = await createUserCalendar(account.access_token, user.email);
+        // Try to create calendar, but don't fail if it doesn't work
+        const calendarId = account.scope?.includes('https://www.googleapis.com/auth/calendar')
+          ? await createUserCalendar(account.access_token, user.email)
+          : null;
 
         const subscriptionId = `sub_${crypto.randomBytes(10).toString('hex')}`;
 
@@ -100,8 +102,8 @@ export const authConfig: NextAuthOptions = {
               profile: userProfile,
               tokens: tokens,
               enabled: true,
-              calendarId: calendarId,
-              subscription: {
+              calendarId: calendarId || existingUser.calendarId, // Keep existing calendarId if creation fails
+              subscription: existingUser.subscription || {
                 id: subscriptionId,
                 active: false,
               }

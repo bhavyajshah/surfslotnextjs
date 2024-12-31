@@ -10,7 +10,7 @@ interface CalendarAccessNotificationProps {
 
 export function CalendarAccessNotification({ onRequestAccess }: CalendarAccessNotificationProps) {
   return (
-    <Alert variant="destructive" className="mb-4">
+    <Alert variant="destructive" className="max-w-6xl mx-auto mb-4">
       <AlertCircle className="h-4 w-4" />
       <AlertDescription className="ml-2 flex items-center justify-between">
         <span>
