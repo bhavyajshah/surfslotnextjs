@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { User } from 'next-auth';
 import { signOut, useSession } from "next-auth/react";
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -74,7 +75,7 @@ function LocationCard({
   isLoading: boolean;
 }) {
   return (
-    <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
+    <Card key={location._id} className="border-t-[5px] border-t-[#264E8A] border border-black/50">
       <div className="p-6">
         <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
         <div className="flex items-center justify-between mb-4">
@@ -92,14 +93,14 @@ function LocationCard({
             {location.spots.map((spot: any) => (
               <div key={spot.id} className="flex items-center space-x-2">
                 <Checkbox
-                  id={`${location._id.oid}-${spot.id}`}
+                  id={`${location._id}-${spot.id}`}
                   checked={spot.enabled}
                   onCheckedChange={(checked) => onSpotToggle(spot.id, checked as boolean)}
                   className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
                   disabled={isLoading}
                 />
                 <label
-                  htmlFor={`${location._id.oid}-${spot.id}`}
+                  htmlFor={`${location._id}-${spot.id}`}
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   {spot.name}
@@ -149,6 +150,7 @@ export default function DashboardContent({ user }: { user: User }) {
   const { data: session } = useSession();
   const { toast } = useToast();
   const [loadingLocations, setLoadingLocations] = useState<Record<string, boolean>>({});
+  const router = useRouter();
 
   useEffect(() => {
     if (session?.accessToken) {
@@ -156,15 +158,16 @@ export default function DashboardContent({ user }: { user: User }) {
       const hasCalendarScope = scope.includes('https://www.googleapis.com/auth/calendar');
       setHasCalendarAccess(hasCalendarScope);
     }
-  }, []);
+  }, [session]);
 
   const handleCalendarAccess = useCallback(async () => {
     try {
       await signOut();
+      router.push('/auth/signin');
     } catch (error) {
       console.error('Failed to request calendar access:', error);
     }
-  }, []);
+  }, [router]);
 
   const handleSubscriptionActivate = useCallback(async () => {
     if (user.email) {
@@ -172,22 +175,19 @@ export default function DashboardContent({ user }: { user: User }) {
     }
   }, [user.email]);
 
-  const handleSpotToggle = useCallback(async (locationId: string | { oid: string }, spotId: string, checked: boolean) => {
-    const actualLocationId = typeof locationId === 'string' ? locationId : locationId.oid;
-    const location = userLocations.find(loc =>
-      loc._id.oid === actualLocationId || loc.locationId === actualLocationId
-    );
+  const handleSpotToggle = useCallback(async (locationId: string, spotId: string, checked: boolean) => {
+    const location = userLocations.find(loc => loc._id === locationId);
 
     if (!location) return;
 
-    setLoadingLocations(prev => ({ ...prev, [actualLocationId]: true }));
+    setLoadingLocations(prev => ({ ...prev, [locationId]: true }));
 
     try {
       const updatedSpots = location.spots.map((spot: any) =>
         spot.id === spotId ? { ...spot, enabled: checked } : spot
       );
 
-      await updateLocationSpots(actualLocationId, updatedSpots);
+      await updateLocationSpots(locationId, updatedSpots);
       toast({
         title: 'Success',
         description: `Spot ${checked ? 'enabled' : 'disabled'} successfully`,
@@ -199,7 +199,7 @@ export default function DashboardContent({ user }: { user: User }) {
         variant: 'destructive',
       });
     } finally {
-      setLoadingLocations(prev => ({ ...prev, [actualLocationId]: false }));
+      setLoadingLocations(prev => ({ ...prev, [locationId]: false }));
     }
   }, [userLocations, updateLocationSpots, toast]);
 
@@ -288,14 +288,14 @@ export default function DashboardContent({ user }: { user: User }) {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {userLocations.map((location: any) => (
           <LocationCard
-            key={location._id.oid}
+            key={location._id}
             location={location}
-            isExpanded={expandedLocations[location._id.oid]}
-            onToggleExpand={() => toggleLocationExpand(location._id.oid)}
-            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id.oid, spotId, checked)}
-            onLocationToggle={(enabled) => handleLocationToggle(location._id.oid, enabled)}
-            onDelete={() => handleDeleteLocation(location._id.oid)}
-            isLoading={loadingLocations[location._id.oid]}
+            isExpanded={expandedLocations[location._id]}
+            onToggleExpand={() => toggleLocationExpand(location._id)}
+            onSpotToggle={(spotId, checked) => handleSpotToggle(location._id, spotId, checked)}
+            onLocationToggle={(enabled) => handleLocationToggle(location._id, enabled)}
+            onDelete={() => handleDeleteLocation(location._id)}
+            isLoading={loadingLocations[location._id]}
           />
         ))}
       </div>
