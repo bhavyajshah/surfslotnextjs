@@ -63,7 +63,6 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
     const {
         userLocations,
         isLoading,
-        isInitialized,
         deleteUserLocation,
         addUserLocation,
         updateLocationSpots,
@@ -92,10 +91,10 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
     }, [checkCalendarAccess]);
 
     useEffect(() => {
-        if (session?.user?.id && !isInitialized) {
+        if (session?.user?.id) {
             loadUserLocations();
         }
-    }, [session?.user?.id, isInitialized, loadUserLocations]);
+    }, [session?.user?.id, loadUserLocations]);
 
     const handleCalendarAccess = useCallback(async () => {
         try {
@@ -206,7 +205,7 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
     }, []);
 
     const renderLocationsContent = () => {
-        if (isLoading || !isInitialized) {
+        if (isLoading) {
             return (
                 <div className="flex justify-center items-center py-12">
                     <Loader className="h-8 w-8 animate-spin text-gray-500" />
@@ -227,7 +226,7 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                     <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] border border-black/50">
                         <img
                             loading="lazy"
-                            src="/Line.png"
+                            src={location.enabled ? "/BlueLine.png" : "/BlackLine.png"}
                             className="object-contain w-full"
                             alt="Decorative line"
                         />
@@ -359,7 +358,7 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                             <LocationSearch onSelect={handleAddLocation} />
                         </div>
                         <div
-                            className="shrink-0 mt-6 h-px border border-solid border-black border-opacity-30 max-md:max-w-full"/>
+                            className="shrink-0 mt-6 h-px border border-solid border-black border-opacity-30 max-md:max-w-full" />
                         <div className="mt-4 md:mt-8">  {renderLocationsContent()} </div>
                     </TabsContent>
                     <TabsContent value="settings" className="mt-4 md:mt-8">
