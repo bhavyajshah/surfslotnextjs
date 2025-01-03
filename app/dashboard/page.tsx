@@ -18,8 +18,8 @@ export default async function DashboardPage() {
   return (
     // <ErrorBoundary fallback={<div>Something went wrong</div>}>
       <Suspense fallback={<div>Loading...</div>}>
-        {session && <Dashboard user={session.user} />}
-        {/* {session && <MySurfSlots user={session.user} />} */}
+        {/* {session && <Dashboard user={session.user} />} */}
+        {session && <MySurfSlots user={session.user} />}
       </Suspense>
     // </ErrorBoundary>
   )
