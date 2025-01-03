@@ -1,8 +1,9 @@
 'use client'
 
 import * as React from "react"
-import { Plus, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2} from 'lucide-react'
 import { useLocations } from "@/hooks/use-locations"
+import { PlusIcon } from "../icons";
 
 interface LocationSearchProps {
     onSelect: (locationId: string) => Promise<void>;
@@ -49,7 +50,7 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
         try {
             await onSelect(locationId);
             setOpen(false);
-            setSearch(''); // Reset search when closing
+            setSearch('');
         } catch (error) {
             console.error('Failed to add location:', error);
         }
@@ -64,10 +65,10 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                 {isAddingLocation ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                    <Plus className="h-4 w-4" />
+                        <PlusIcon className="h-4 w-4" />
                 )}
-                <span>{isAddingLocation ? 'Adding location...' : 'Add new location'}</span>
-                {open ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+                <span className="text-[15px]">{isAddingLocation ? 'Adding location...' : 'Add new location'}</span>
+
             </div>
             {open && (
                 <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10">

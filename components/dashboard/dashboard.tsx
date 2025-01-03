@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { User } from 'next-auth';
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
@@ -57,7 +57,7 @@ function UserNav({ user }: { user: User }) {
   );
 }
 
-export default function DashboardContent({ user }: { user: User }) {
+export default function Dashboard({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("locations");
   const {
     userLocations,
@@ -222,7 +222,6 @@ export default function DashboardContent({ user }: { user: User }) {
         </div>
       );
     }
-
     return (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {userLocations.map((location: any) => (
