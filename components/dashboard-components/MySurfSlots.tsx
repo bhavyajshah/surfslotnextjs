@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocations } from '@/hooks/use-locations';
 import { Trash2, Loader } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -26,7 +25,7 @@ import { ScheduledTab } from '../dashboard/tabs/scheduled-tab';
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DownArrow, UpArrow } from '../icons';
+import { DownArrow, Line, UpArrow } from '../icons';
 
 function UserNav({ user }: { user: User }) {
     const handleManageSubscription = () => {
@@ -60,20 +59,6 @@ function UserNav({ user }: { user: User }) {
 }
 
 export default function MySurfSlots({ user }: { user: User }): JSX.Element {
-    const surfSpots = {
-        locationName: "Ericeira",
-        title: "Hide surf in Ericeira",
-        spots: [
-            { name: "Coxos", isChecked: false },
-            { name: "Ribeira d'ilhas", isChecked: false },
-            { name: "Pedra Branca", isChecked: false },
-            { name: "Foz do Lizandro", isChecked: true },
-            { name: "Praia dos Pescadores", isChecked: false },
-            { name: "Praia do Sul", isChecked: true },
-            { name: "Pico do Futuro", isChecked: false },
-        ]
-    };
-
     const [activeTab, setActiveTab] = useState("locations");
     const {
         userLocations,
@@ -237,40 +222,30 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
             );
         }
         return (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {userLocations.map((location: any) => (
                     <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] border border-black/50">
                         <img
                             loading="lazy"
-                            src="https://cdn.builder.io/api/v1/image/assets/TEMP/fe4dca4f0b810e2f143f3440b3b9eb096739f85a164c6e747b41f75ad3f22987?placeholderIfAbsent=true&apiKey=76b2b41bcdee41a2b26006bdf9337ab5"
+                            src="/Line.png"
                             className="object-contain w-full"
                         />
-                        <div className="p-6">
-                            <h2 className="text-xl font-medium mb-2">{location.locationName}</h2>
+                        <div className="p-4 md:p-6">
+                            <h2 className="text-xl md:text-[24px] font-medium mb-2">{location.locationName}</h2>
                             <div className="flex items-center justify-between mb-4">
-
-                                <div className="flex gap-5 justify-between mt-5 w-full text-base">
+                                <div className="flex gap-2 md:gap-5 justify-between mt-5 w-full text-sm md:text-base">
                                     <span
-                                        className="cursor-pointer"
+                                        className="cursor-pointer text-[#000000] text-opacity-70"
                                         onClick={() => toggleLocationExpand(location._id.oid)}
                                     >
                                         {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
                                     </span>
-
                                     {expandedLocations[location._id.oid] ? (
                                         <UpArrow className="inline ml-1" />
                                     ) : (
                                         <DownArrow className="inline ml-1" />
                                     )}
-
-
                                 </div>
-                                <span
-                                    className="text-sm text-blue-600 cursor-pointer"
-                                    onClick={() => toggleLocationExpand(location._id.oid)}
-                                >
-
-                                </span>
                             </div>
                             {expandedLocations[location._id.oid] && (
                                 <div className="space-y-2 mb-4">
@@ -321,32 +296,31 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
         );
     }
 
-
     return (
         <div className="flex overflow-hidden flex-col pb-24 bg-neutral-50">
             <div className="flex overflow-hidden flex-col w-full bg-white shadow-[0px_4px_4px_rgba(0,0,0,0.15)] max-md:max-w-full">
-                <div className="flex overflow-hidden flex-col justify-center items-end px-20 py-2 w-full border border-solid border-[#000000] border-opacity-5 max-md:px-5 max-md:max-w-full">
+                <div className="flex overflow-hidden flex-col justify-center items-end px-4 md:px-20 py-2 w-full border border-solid border-[#000000] border-opacity-5">
                     <UserNav user={user} />
                 </div>
-                <div className="flex flex-col mt-10 ml-28 max-w-full font-medium text-black">
-                    <div className="self-start text-[40px] font-medium">my surfslots</div>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-wrap gap-10 items-start mt-10 text-xl max-md:mt-10">
-                        <TabsList className="w-full justify-start space-x-8 h-auto bg-white p-0">
+                <div className="flex flex-col mt-6 md:mt-10 mx-4 md:ml-28 max-w-full font-medium text-black">
+                    <div className="self-start text-3xl md:text-[40px] font-medium">my surfslots</div>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-wrap gap-4 md:gap-10 items-start mt-6 md:mt-10 text-lg md:text-xl">
+                        <TabsList className="w-full justify-start space-x-2 md:space-x-8 h-auto bg-white p-0 overflow-x-auto">
                             <TabsTrigger
                                 value="locations"
-                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-[20px] text-black font-medium border-transparent rounded-none px-0"
+                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-base md:text-[20px] text-black font-medium border-transparent rounded-none px-0 whitespace-nowrap"
                             >
                                 locations
                             </TabsTrigger>
                             <TabsTrigger
                                 value="settings"
-                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-[20px] text-black font-medium border-transparent rounded-none px-0"
+                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-base md:text-[20px] text-black font-medium border-transparent rounded-none px-0 whitespace-nowrap"
                             >
                                 surf settings
                             </TabsTrigger>
                             <TabsTrigger
                                 value="scheduled"
-                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-[20px] text-black font-medium border-transparent rounded-none px-0"
+                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-base md:text-[20px] text-black font-medium border-transparent rounded-none px-0 whitespace-nowrap"
                             >
                                 scheduled surfslots
                             </TabsTrigger>
@@ -355,9 +329,8 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                 </div>
             </div>
 
-
-            <div className="gap-9 items-center text-base font-medium text-black min-h-[57px]">
-                <div className="mt-8">
+            <div className="gap-4 md:gap-9 items-center text-sm md:text-base font-medium text-black min-h-[57px]">
+                <div className="mt-4 md:mt-8">
                     {!hasCalendarAccess && (
                         <CalendarAccessNotification onRequestAccess={handleCalendarAccess} />
                     )}
@@ -366,31 +339,30 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                     )}
                 </div>
             </div>
-            <div className="flex flex-col self-center w-full max-w-7xl max-md:mt-10 max-md:max-w-full">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-10 items-start text-xl max-w-6xl mx-auto">
-                <TabsContent value="locations">
-                    <div className="flex w-full items-center mt-8 justify-between">
-                            <div className="flex items-center gap-4 text-xl">
-                            <Avatar className="h-12 w-12 border">
-                                <AvatarImage src={user.image || ''} alt={user.name || ''} />
+            <div className="flex flex-col self-center w-full max-w-7xl px-4 md:px-0 max-md:mt-6 md:mt-10 max-md:max-w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-4 md:gap-10 items-start text-lg md:text-xl max-w-6xl mx-auto">
+                    <TabsContent value="locations">
+                        <div className="flex flex-col sm:flex-row w-full items-start sm:items-center mt-4 md:mt-8 justify-between gap-4">
+                            <div className="flex items-center gap-2 md:gap-4 text-base md:text-xl">
+                                <Avatar className="h-10 w-10 md:h-12 md:w-12 border">
+                                    <AvatarImage src={user.image || ''} alt={user.name || ''} />
                                     <AvatarFallback className='my-auto basis-auto'>{user.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
-                            </Avatar>
+                                </Avatar>
                                 <span className='my-auto basis-auto'>{user.name}</span>
+                            </div>
+                            <LocationSearch onSelect={handleAddLocation} />
                         </div>
-                        <LocationSearch onSelect={handleAddLocation} />
-                    </div>
                         <div className="shrink-0 mt-2.5 h-px border border-solid border-black border-opacity-40 max-md:max-w-full" />
-                        <div className="mt-8">  {renderLocationsContent()} </div>
-                </TabsContent>
-                <TabsContent value="settings" className="mt-8">
-                    <SettingsTab />
-                </TabsContent>
-                <TabsContent value="scheduled" className="mt-8">
-                    <ScheduledTab />
-                </TabsContent>
+                        <div className="mt-4 md:mt-8">  {renderLocationsContent()} </div>
+                    </TabsContent>
+                    <TabsContent value="settings" className="mt-4 md:mt-8">
+                        <SettingsTab />
+                    </TabsContent>
+                    <TabsContent value="scheduled" className="mt-4 md:mt-8">
+                        <ScheduledTab />
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>
     );
 }
-

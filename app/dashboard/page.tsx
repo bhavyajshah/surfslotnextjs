@@ -6,6 +6,7 @@ import { ErrorBoundary } from "react-error-boundary"
 import { isAuthenticated } from "@/lib/auth/utils/auth-checks"
 import { ROUTES } from "@/lib/constants"
 import MySurfSlots from "@/components/dashboard-components/MySurfSlots"
+import Dashboard from "@/components/dashboard/dashboard"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authConfig)
@@ -15,11 +16,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <ErrorBoundary fallback={<div>Something went wrong</div>}>
+    // <ErrorBoundary fallback={<div>Something went wrong</div>}>
       <Suspense fallback={<div>Loading...</div>}>
-        {/* {session && <DashboardContent user={session.user} />} */}
-        {session && <MySurfSlots user={session.user} />}
+        {session && <Dashboard user={session.user} />}
+        {/* {session && <MySurfSlots user={session.user} />} */}
       </Suspense>
-    </ErrorBoundary>
+    // </ErrorBoundary>
   )
 }

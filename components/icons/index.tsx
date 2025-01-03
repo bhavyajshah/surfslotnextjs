@@ -21,4 +21,9 @@ export const DownArrow = (props:any) => (
         <path d="M7 10L0.0717964 0.25L13.9282 0.25L7 10Z" fill="#264E8A" />
     </svg>
 )
+export const Line = (props:any) => (
+    <svg width="301" height="6" viewBox="0 0 301 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 3H301" stroke="#264E8A" stroke-width="5" />
+    </svg>
+)
 
