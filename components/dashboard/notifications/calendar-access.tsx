@@ -10,16 +10,22 @@ interface CalendarAccessNotificationProps {
 
 export function CalendarAccessNotification({ onRequestAccess }: CalendarAccessNotificationProps) {
   return (
-    <Alert variant="destructive" className="max-w-6xl mx-auto mb-4">
-      <AlertCircle className="h-4 w-4" />
-      <AlertDescription className="ml-2 flex items-center justify-between">
-        <span>
+    <Alert variant="destructive" className="max-w-6xl mx-auto mb-4 p-3 sm:p-4">
+      <div className="flex items-center space-x-2 flex-wrap sm:flex-nowrap">
+        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+        <AlertDescription className="flex-grow text-sm">
           The access to your calendar is missing so that surfslot can schedule the events in your calendar.
-        </span>
-        <Button variant="outline" size="sm" onClick={onRequestAccess} className="ml-4">
+        </AlertDescription>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRequestAccess}
+          className="w-full sm:w-auto mt-2 sm:mt-0 whitespace-nowrap"
+        >
           Provide Access
         </Button>
-      </AlertDescription>
+      </div>
     </Alert>
   );
 }
+

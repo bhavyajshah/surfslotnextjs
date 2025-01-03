@@ -229,23 +229,28 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                             loading="lazy"
                             src="/Line.png"
                             className="object-contain w-full"
+                            alt="Decorative line"
                         />
                         <div className="p-4 md:p-6">
-                            <h2 className="text-xl md:text-[24px] font-medium mb-2">{location.locationName}</h2>
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex gap-2 md:gap-5 justify-between mt-5 w-full text-sm md:text-base">
-                                    <span
-                                        className="cursor-pointer text-[#000000] text-opacity-70"
-                                        onClick={() => toggleLocationExpand(location._id.oid)}
-                                    >
-                                        {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
-                                    </span>
+                            <h2 className="text-xl md:text-[24px] font-medium mb-4">{location.locationName}</h2>
+                            <div className="flex items-center justify-start gap-4 mb-4">
+                                <span
+                                    className="cursor-pointer text-[#000000] text-opacity-70 text-sm md:text-base"
+                                    onClick={() => toggleLocationExpand(location._id.oid)}
+                                >
+                                    {expandedLocations[location._id.oid] ? 'Hide' : 'View'} surf spots in {location.locationName}
+                                </span>
+                                <button
+                                    onClick={() => toggleLocationExpand(location._id.oid)}
+                                    className="focus:outline-none"
+                                    aria-label={expandedLocations[location._id.oid] ? "Collapse surf spots" : "Expand surf spots"}
+                                >
                                     {expandedLocations[location._id.oid] ? (
-                                        <UpArrow className="inline ml-1" />
+                                        <UpArrow className="inline w-5 h-5" />
                                     ) : (
-                                        <DownArrow className="inline ml-1" />
+                                        <DownArrow className="inline w-5 h-5" />
                                     )}
-                                </div>
+                                </button>
                             </div>
                             {expandedLocations[location._id.oid] && (
                                 <div className="space-y-2 mb-4">
@@ -269,12 +274,13 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                                 </div>
                             )}
                             <div className="flex items-center justify-end gap-4 mt-4">
-                                <div
+                                <button
                                     className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
                                     onClick={() => handleDeleteLocation(location._id.oid)}
+                                    aria-label="Delete location"
                                 >
                                     <Trash2 className="h-5 w-5 text-black" />
-                                </div>
+                                </button>
                                 <Switch
                                     checked={location.enabled}
                                     onCheckedChange={(checked) => handleLocationToggle(location._id.oid, checked)}
@@ -297,18 +303,18 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
     }
 
     return (
-        <div className="flex overflow-hidden flex-col pb-24 bg-neutral-50">
-            <div className="flex overflow-hidden flex-col w-full bg-white shadow-[0px_4px_4px_rgba(0,0,0,0.15)] max-md:max-w-full">
-                <div className="flex overflow-hidden flex-col justify-center items-end px-4 md:px-20 py-2 w-full border border-solid border-[#000000] border-opacity-5">
+        <div className="flex flex-col min-h-screen bg-neutral-50">
+            <div className="flex flex-col w-full bg-white shadow-[0px_4px_4px_rgba(0,0,0,0.15)]">
+                <div className="flex justify-end items-center px-4 md:px-20 py-2 border-b border-black/5">
                     <UserNav user={user} />
                 </div>
                 <div className="flex flex-col mt-6 md:mt-10 mx-4 md:ml-28 max-w-full font-medium text-black">
                     <div className="self-start text-3xl md:text-[40px] font-medium">my surfslots</div>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-wrap gap-4 md:gap-10 items-start mt-6 md:mt-10 text-lg md:text-xl">
-                        <TabsList className="w-full justify-start space-x-2 md:space-x-8 h-auto bg-white p-0 overflow-x-auto">
+                        <TabsList className="w-full justify-start space-x-2 md:space-x-8 h-auto bg-white p-0">
                             <TabsTrigger
                                 value="locations"
-                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-base md:text-[20px] text-black font-medium border-transparent rounded-none px-0 whitespace-nowrap"
+                                className="data-[state=active]:border-[#264E8A] data-[state=active]:shadow-none border-b-4 text-base md:text-[20px] text-black font-medium border-transparent rounded-none px-0"
                             >
                                 locations
                             </TabsTrigger>
@@ -340,9 +346,9 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                 </div>
             </div>
             <div className="flex flex-col self-center w-full max-w-7xl px-4 md:px-0 max-md:mt-6 md:mt-10 max-md:max-w-full">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-4 md:gap-10 items-start text-lg md:text-xl max-w-6xl mx-auto">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-4 md:gap-10 mb-10 items-start text-lg md:text-xl max-w-6xl mx-auto">
                     <TabsContent value="locations">
-                        <div className="flex flex-col sm:flex-row w-full items-start sm:items-center mt-4 md:mt-8 justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row w-full items-start sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-2 md:gap-4 text-base md:text-xl">
                                 <Avatar className="h-10 w-10 md:h-12 md:w-12 border">
                                     <AvatarImage src={user.image || ''} alt={user.name || ''} />
@@ -352,7 +358,8 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                             </div>
                             <LocationSearch onSelect={handleAddLocation} />
                         </div>
-                        <div className="shrink-0 mt-2.5 h-px border border-solid border-black border-opacity-40 max-md:max-w-full" />
+                        <div
+                            className="shrink-0 mt-6 h-px border border-solid border-black border-opacity-30 max-md:max-w-full"/>
                         <div className="mt-4 md:mt-8">  {renderLocationsContent()} </div>
                     </TabsContent>
                     <TabsContent value="settings" className="mt-4 md:mt-8">

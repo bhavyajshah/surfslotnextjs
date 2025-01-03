@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { Loader2} from 'lucide-react'
+import { Loader2, Plus} from 'lucide-react'
 import { useLocations } from "@/hooks/use-locations"
 import { PlusIcon } from "../icons";
 
@@ -65,7 +65,7 @@ export function LocationSearch({ onSelect }: LocationSearchProps) {
                 {isAddingLocation ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                        <PlusIcon className="h-4 w-4" />
+                        <Plus className="h-6 w-6" />
                 )}
                 <span className="text-[15px]">{isAddingLocation ? 'Adding location...' : 'Add new location'}</span>
 
