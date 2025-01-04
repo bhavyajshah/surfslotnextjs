@@ -235,7 +235,7 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                         key={location._id.oid}
                         className={`border-t-[5px] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] border border-black/50 transition-all duration-300 ${location.enabled
                                 ? 'border-t-[#264E8A] bg-white'
-                                : 'border-t-gray-400 bg-gray-100 opacity-60'
+                                : 'border-t-gray-400 bg-gray-300 opacity-50'
                             }`}
                     >
                         {location.enabled && (
@@ -277,11 +277,11 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                                                 onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
                                                 disabled={loadingLocations[location._id.oid] || !location.enabled}
                                                 className={`border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white
-                                                ${!location.enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                ${!location.enabled ? 'cursor-not-allowed' : ''}`}
                                             />
                                             <label
                                                 htmlFor={spot.id}
-                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-90"
+                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed"
                                             >
                                                 {spot.name}
                                             </label>
