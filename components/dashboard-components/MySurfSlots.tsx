@@ -291,7 +291,7 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                             )}
                             <div className="flex items-center justify-end gap-4 -mb-4">
                                 <button
-                                    className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
+                                    className="rounded-md p-2 cursor-pointer hover:bg-gray-50"
                                     onClick={() => handleDeleteLocation(location._id.oid)}
                                     aria-label="Delete location"
                                 >
