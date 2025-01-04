@@ -96,6 +96,14 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
         }
     }, [session?.user?.id, loadUserLocations]);
 
+    useEffect(() => {
+        if (userLocations.length > 0) {
+            setExpandedLocations(
+                Object.fromEntries(userLocations.map(location => [location._id.oid, true]))
+            );
+        }
+    }, [userLocations]);
+
     const handleCalendarAccess = useCallback(async () => {
         try {
             await signOut();
@@ -223,14 +231,22 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
         return (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {userLocations.map((location: any) => (
-                    <Card key={location._id.oid} className="border-t-[5px] border-t-[#264E8A] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] border border-black/50">
-                        <img
-                            loading="lazy"
-                            src={location.enabled ? "/BlueLine.png" : "/BlackLine.png"}
-                            className="object-contain w-full"
-                            alt="Decorative line"
-                        />
-                        <div className="p-4 md:p-6">
+                    <Card
+                        key={location._id.oid}
+                        className={`border-t-[5px] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] border border-black/50 transition-all duration-300 ${location.enabled
+                                ? 'border-t-[#264E8A] bg-white'
+                                : 'border-t-gray-400 bg-gray-100 opacity-60'
+                            }`}
+                    >
+                        {location.enabled && (
+                            <img
+                                loading="lazy"
+                                src="/BlueLine.png"
+                                className="object-contain w-full"
+                                alt="Decorative line"
+                            />
+                        )}
+                        <div className={`p-4 md:p-6 ${!location.enabled ? 'text-gray-500' : ''}`}>
                             <h2 className="text-xl md:text-[24px] font-medium mb-4">{location.locationName}</h2>
                             <div className="flex items-center justify-start gap-4 mb-4">
                                 <span
@@ -259,12 +275,13 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                                                 id={spot.id}
                                                 checked={spot.enabled}
                                                 onCheckedChange={(checked) => handleSpotToggle(location._id.oid, spot.id, checked as boolean)}
-                                                disabled={loadingLocations[location._id.oid]}
-                                                className="border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white"
+                                                disabled={loadingLocations[location._id.oid] || !location.enabled}
+                                                className={`border-[#264E8A] data-[state=checked]:bg-[#264E8A] data-[state=checked]:text-white
+                                                ${!location.enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             />
                                             <label
                                                 htmlFor={spot.id}
-                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-90"
                                             >
                                                 {spot.name}
                                             </label>
@@ -272,7 +289,7 @@ export default function MySurfSlots({ user }: { user: User }): JSX.Element {
                                     ))}
                                 </div>
                             )}
-                            <div className="flex items-center justify-end gap-4 mt-4">
+                            <div className="flex items-center justify-end gap-4 -mb-4">
                                 <button
                                     className="bg-white rounded-md p-2 cursor-pointer hover:bg-gray-50"
                                     onClick={() => handleDeleteLocation(location._id.oid)}

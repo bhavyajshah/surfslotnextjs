@@ -15,7 +15,7 @@ export function SubscriptionNotification({ onActivate }: SubscriptionNotificatio
         <div className="flex flex-col sm:flex-row items-start sm:items-center">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
           <div className="ml-0 sm:ml-4 mt-3 sm:mt-0 flex-grow">
-            <AlertTitle className="text-lg font-semibold mb-2">Subscription Inactive</AlertTitle>
+            {/* <AlertTitle className="text-lg font-semibold mb-2">Subscription Inactive</AlertTitle> */}
             <AlertDescription className="text-sm">
               Your subscription is not active. To access your surfslots, please activate your subscription.
             </AlertDescription>
